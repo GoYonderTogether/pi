@@ -669,7 +669,7 @@ describe("inbox", () => {
 		await harness.close(context);
 	});
 
-	it("leaves the inbox alone when the run's task is aborted", async () => {
+	it("continues the inbox at the final boundary when the run's task is aborted", async () => {
 		const setup = chatSetup();
 		const first = gated(answer("never"));
 		setup.faux.setResponses([first.step]);
@@ -681,8 +681,8 @@ describe("inbox", () => {
 		await harness.abortTask(taskId, context);
 		expect(await input.wait(context)).toMatchObject({ status: "unanswered", reason: "aborted" });
 		await harness.waitForIdle(context);
-		expect((await status(f)).status).toBe("queued");
-		expect(await inbox(harness, root)).toEqual([[f.id, "followUp"]]);
+		expect(await status(f)).toMatchObject({ status: "unanswered", reason: "model_error" });
+		expect(await inbox(harness, root)).toEqual([]);
 		await harness.close(context);
 	});
 

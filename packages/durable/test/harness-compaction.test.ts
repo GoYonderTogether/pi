@@ -686,7 +686,7 @@ describe("manual compaction", () => {
 		expect((await live(chat)).compactions).toBeUndefined();
 		expect((await kinds(chat.root)).includes("pi.compaction")).toBe(false);
 
-		// Queued while busy, then Esc: the queued write stays and lands with the next run's boundary.
+		// Yonder fork: Esc places the already queued summary at its native final boundary.
 		const gate = deferred();
 		const busy = deferred();
 		chat.faux.agent.push(gated(gate, answer("never"), busy));
@@ -697,11 +697,11 @@ describe("manual compaction", () => {
 		await chat.root.abort(context);
 		const submissionId = queued.status === "completed" ? queued.result.submissionId! : undefined;
 		const submission = (await chat.harness.submission(submissionId!, context))!;
-		expect((await submission.status(context)).status).toBe("queued");
-		expect(await submission.abort(context)).toBe("aborted");
+		expect((await submission.status(context)).status).toBe("done");
+		expect(await submission.abort(context)).toBe("settled");
 		await turn(chat, "next", "ok");
-		expect(await submission.status(context)).toMatchObject({ status: "unanswered", reason: "aborted" });
-		expect((await kinds(chat.root)).includes("pi.compaction")).toBe(false);
+		expect(await submission.status(context)).toMatchObject({ status: "done" });
+		expect((await kinds(chat.root)).includes("pi.compaction")).toBe(true);
 		await chat.harness.close(context);
 	});
 
@@ -2204,7 +2204,7 @@ describe("blocking and manual compaction together", () => {
 		await chat.harness.close(context);
 	});
 
-	it("places a summary that survived Esc at the next submission, before its input", async () => {
+	it("places a summary at the abort final boundary, before the next input", async () => {
 		const chat = await open();
 		await history(chat);
 		const reached = deferred();
@@ -2219,7 +2219,7 @@ describe("blocking and manual compaction together", () => {
 		))!;
 		await chat.root.abort(context);
 		expect(await busy.wait(context)).toMatchObject({ status: "unanswered", reason: "aborted" });
-		expect((await submission.status(context)).status).toBe("queued");
+		expect((await submission.status(context)).status).toBe("done");
 		await turn(chat, "u5", "a5");
 		expect((await submission.status(context)).status).toBe("done");
 		const request = chat.faux.agentRequests.at(-1)!.messages;

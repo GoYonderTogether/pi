@@ -289,7 +289,7 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 				const result = harnessError("aborted", `Tool ${call.name} was aborted`);
 				await appendToolResult(tx, conversationId, call, result, { timestamp: runtime.now() });
 			}
-			endRun(tx, live, runtime.taskId, { status: "unanswered", reason: "aborted" });
+			await endRun(tx, live, conversationId, runtime.taskId, { status: "unanswered", reason: "aborted" });
 			if (ownsRun) {
 				const { users } = await applyBoundary(tx, boundary, "final", runtime.now());
 				if (users.length > 0) await startRun(tx, conversationId, live, users);
@@ -361,7 +361,11 @@ function compactionFailure(outcome: Exclude<TaskOutcome<CompactionResult>, { sta
 async function failModelError(runtime: Runtime, text: string, context: Context): Promise<void> {
 	await runtime.commit(async (tx) => {
 		const live = await tx.doc(LiveDoc, runtime.conversationId);
-		endRun(tx, live, runtime.taskId, { status: "unanswered", reason: "model_error", detail: text });
+		await endRun(tx, live, runtime.conversationId, runtime.taskId, {
+			status: "unanswered",
+			reason: "model_error",
+			detail: text,
+		});
 		return {
 			status: "terminal",
 			outcome: { status: "failed", error: { message: text, detail: { reason: "model_error" } } },
@@ -375,7 +379,7 @@ async function failNoModel(runtime: Runtime, ref: ModelRef | undefined, context:
 		ref === undefined ? "No model is configured" : `Model ${ref.provider}/${ref.modelId} is not available`;
 	await runtime.commit(async (tx) => {
 		const live = await tx.doc(LiveDoc, runtime.conversationId);
-		endRun(tx, live, runtime.taskId, { status: "unanswered", reason: "no_model" });
+		await endRun(tx, live, runtime.conversationId, runtime.taskId, { status: "unanswered", reason: "no_model" });
 		return { status: "terminal", outcome: { status: "failed", error: { message, detail: { reason: "no_model" } } } };
 	}, context);
 }
@@ -532,7 +536,11 @@ async function classify(
 			return { status: "running", checkpoint };
 		}
 		const text = message.errorMessage ?? `Model response ended with stop reason ${message.stopReason}`;
-		endRun(tx, live, runtime.taskId, { status: "unanswered", reason: "model_error", detail: text });
+		await endRun(tx, live, conversationId, runtime.taskId, {
+			status: "unanswered",
+			reason: "model_error",
+			detail: text,
+		});
 		return {
 			status: "terminal",
 			outcome: { status: "failed", error: { message: text, detail: { reason: "model_error" } } },
@@ -566,7 +574,7 @@ async function answer(runtime: Runtime, message: AssistantMessage, context: Cont
 			delete live.generation;
 			return result;
 		}
-		endRun(tx, live, runtime.taskId, { status: "done", answer: entry.id });
+		await endRun(tx, live, conversationId, runtime.taskId, { status: "done", answer: entry.id });
 		if (users.length > 0) await startRun(tx, conversationId, live, users);
 		return result;
 	}, context);
@@ -668,13 +676,13 @@ async function finishToolRound(
 				boundary.head = entry.id;
 			}
 			const { users } = await applyBoundary(tx, boundary, "final", now);
-			endRun(tx, live, runtime.taskId, { status: "done", answer: assistant });
+			await endRun(tx, live, conversationId, runtime.taskId, { status: "done", answer: assistant });
 			if (users.length > 0) await startRun(tx, conversationId, live, users);
 		} else {
 			const { users, reset } = await applyBoundary(tx, boundary, "postTools", now);
 			if (reset) {
 				// The queued reset cut the run's context before an answer.
-				endRun(tx, live, runtime.taskId, { status: "unanswered", reason: "reset" });
+				await endRun(tx, live, conversationId, runtime.taskId, { status: "unanswered", reason: "reset" });
 				if (users.length > 0) await startRun(tx, conversationId, live, users);
 			} else {
 				delete live.tools;

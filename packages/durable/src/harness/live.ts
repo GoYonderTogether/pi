@@ -1,11 +1,21 @@
-import type { Draft, JsonRepresentation, JsonValue } from "@earendil-works/chord";
+import { copyJson, type Draft, type JsonRepresentation, type JsonValue } from "@earendil-works/chord";
 import type { AssistantMessage, Usage } from "@earendil-works/pi-ai";
-import { defineDoc } from "../documents.ts";
+import { defineDoc, defineDocFamily } from "../documents.ts";
 import type { Transaction } from "../session/transaction.ts";
-import type { EntryId, JsonObject, SubmissionId, SubmissionSettlement, TaskId, TaskRecord, Tx } from "../types.ts";
+import type {
+	ConversationId,
+	EntryId,
+	JsonObject,
+	SubmissionId,
+	SubmissionSettlement,
+	TaskId,
+	TaskRecord,
+	Tx,
+} from "../types.ts";
 import { convertPartial } from "./generation.ts";
 import type { SchedulerOutcome } from "./scheduler.ts";
 import type { CompactionReason, CompactionResult, ToolDiagnostic } from "./types.ts";
+import { UsageDoc, type UsageState } from "./usage.ts";
 
 /** What a running tool call publishes, shared by model-issued and nested calls. */
 type SlotProgress = {
@@ -126,6 +136,18 @@ export const LiveDoc = defineDoc<LiveState>({
 		!(value.nestedTools ?? []).some((slot) => slot.status === "running"),
 });
 
+/** Yonder fork: terminal facts committed atomically with submission settlements. */
+export type RunReceiptState = { inputs: SubmissionId[]; settlement: SubmissionSettlement | null; usage: UsageState };
+export const RunReceiptDoc = defineDocFamily({
+	kind: "pi.run-receipt",
+	version: 1,
+	family: true,
+	scope: "conversation",
+	history: "latest",
+	fork: "initial",
+	initial: (_seed: null): RunReceiptState => ({ inputs: [], settlement: null, usage: { models: {}, tools: {} } }),
+});
+
 /** Built-in task kinds that can own `pi.live.run`. */
 const RUN_TASK_KINDS: ReadonlySet<string> = new Set(["pi.generation"]);
 const TOOL_TASK_KIND = "pi.tool";
@@ -135,8 +157,18 @@ const COMPACTION_TASK_KIND = "pi.compaction";
  * End the run owned by `taskId`: settle each of its inputs and remove `run`. Always removes `generation`, `tools`, and
  * `nestedTools`, whose presentation belongs to the ending run.
  */
-export function endRun(tx: Tx, live: Draft<LiveState>, taskId: TaskId, settlement: SubmissionSettlement): void {
+export async function endRun(
+	tx: Tx,
+	live: Draft<LiveState>,
+	conversationId: ConversationId,
+	taskId: TaskId,
+	settlement: SubmissionSettlement,
+): Promise<void> {
 	if (live.run?.taskId === taskId) {
+		const receipt = await tx.doc(RunReceiptDoc, conversationId, String(live.run.inputs[0]), null);
+		receipt.inputs = [...live.run.inputs];
+		receipt.settlement = copyJson(settlement) as Draft<SubmissionSettlement>;
+		receipt.usage = copyJson(await tx.doc(UsageDoc, conversationId)) as Draft<UsageState>;
 		for (const id of live.run.inputs) tx.settleSubmission(id, settlement);
 		delete live.run;
 	}
@@ -257,9 +289,10 @@ export async function settleSchedulerOutcome(
 	const live = await tx.doc(LiveDoc, record.conversationId);
 	if (live.run?.taskId !== record.id) return;
 	await convertPartial(tx, live, record.conversationId);
-	endRun(
+	await endRun(
 		tx,
 		live,
+		record.conversationId,
 		record.id,
 		outcome.status === "faulted"
 			? { status: "unanswered", reason: "faulted", detail: outcome.error.message }

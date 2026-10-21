@@ -46,6 +46,8 @@ export {
 	type LiveState,
 	type NestedToolSlot,
 	type NestedToolSummary,
+	RunReceiptDoc,
+	type RunReceiptState,
 	type ToolSlot,
 } from "./harness/live.ts";
 export { ProviderDoc, type ProviderState } from "./harness/provider.ts";

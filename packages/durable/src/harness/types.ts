@@ -765,6 +765,8 @@ export interface GenerationHooks {
 	): HookResult<{ readonly messages: readonly Message[] }>;
 	/** Every terminal provider message, before classification. */
 	afterResponse(message: AssistantMessage, api: HookApi, context: Context): void | Promise<void>;
+	/** Yonder fork: override error classification; native budget, overflow and abort rules still apply. Last defined decision wins. */
+	shouldRetry(message: AssistantMessage, api: HookApi, context: Context): HookResult<boolean>;
 	/** A final answer; the first `continue` appends a user message and continues the run. */
 	onYield(answer: AssistantMessage, api: HookApi, context: Context): HookResult<{ readonly continue: UserInput }>;
 	/** After every tool of the round is terminal; `results` are the round's result entries in call order. */

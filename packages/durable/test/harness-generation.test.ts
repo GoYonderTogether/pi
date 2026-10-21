@@ -210,7 +210,11 @@ describe("generation", () => {
 		const { harness, root } = await openChat(new MemoryStorage(), setup);
 		harness.resume();
 		const settled = await (await root.submit({ type: "input", content: "hi" }, context)).wait(context);
-		expect(settled).toMatchObject({ status: "unanswered", reason: "model_error", detail: "503 Service Unavailable" });
+		expect(settled).toMatchObject({
+			status: "unanswered",
+			reason: "model_error",
+			detail: "Model retries exhausted (1 retries): 503 Service Unavailable",
+		});
 		expect((await allEntries(root)).map((entry) => entry.kind)).toEqual(["pi.user", "pi.assistant", "pi.assistant"]);
 		expect(setup.faux.getPendingResponseCount()).toBe(1);
 		await harness.close(context);

@@ -514,13 +514,14 @@ async function classify(
 		}
 	}
 	const policy = settings.retry;
+	let retryable = isRetryableAssistantError(message);
+	await runtime.hooks.each("shouldRetry", async (hook) => {
+		const decision = await hook(message, runtime, context);
+		if (decision !== undefined) retryable = decision;
+	});
 	// An overflow is never retried: only a compaction can make the next request fit.
 	const retry =
-		message.stopReason === "error" &&
-		!overflow &&
-		isRetryableAssistantError(message) &&
-		policy.enabled &&
-		attempt <= policy.maxRetries;
+		message.stopReason === "error" && !overflow && retryable && policy.enabled && attempt <= policy.maxRetries;
 	const until = retry ? runtime.now() + retryDelayMs(policy, attempt) : 0;
 	await runtime.commit(async (tx): Promise<Next> => {
 		const live = await tx.doc(LiveDoc, conversationId);
@@ -535,7 +536,10 @@ async function classify(
 			} as const;
 			return { status: "running", checkpoint };
 		}
-		const text = message.errorMessage ?? `Model response ended with stop reason ${message.stopReason}`;
+		const lastError = message.errorMessage ?? `Model response ended with stop reason ${message.stopReason}`;
+		const exhausted =
+			message.stopReason === "error" && !overflow && retryable && policy.enabled && attempt > policy.maxRetries;
+		const text = exhausted ? `Model retries exhausted (${policy.maxRetries} retries): ${lastError}` : lastError;
 		await endRun(tx, live, conversationId, runtime.taskId, {
 			status: "unanswered",
 			reason: "model_error",

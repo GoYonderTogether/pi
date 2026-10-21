@@ -189,7 +189,10 @@ class HarnessImpl<Tool extends ToolRegistration> extends SessionImpl implements 
 			storage,
 			registry: options.registry,
 			models: options.models,
-			agent: (id, snapshot, callContext) => this.resolveAgent(id, snapshot as RegistrySnapshot<Tool>, callContext),
+			agent: async (id, snapshot, callContext) => {
+				await options.beforeAgent?.({ conversationId: id, read: this }, callContext);
+				return this.resolveAgent(id, snapshot as RegistrySnapshot<Tool>, callContext);
+			},
 			settings,
 			env: (id, callContext) => this.buildEnv(id, callContext),
 			now,

@@ -577,6 +577,8 @@ export type HarnessOptions<Tool extends ToolRegistration = ToolRegistration> = {
 	/** pi-ai model access used by generation. */
 	readonly models: Models;
 	readonly registry: RegistryReader<Tool>;
+	/** Yonder fork: runs before task agent resolution, outside the Session line. */
+	readonly beforeAgent?: (target: EnvTarget, context: Context) => void | Promise<void>;
 	readonly settings?: HarnessSettings;
 	/** Builds a conversation's environment at each use. Never called on the Session line; may be async. */
 	readonly env?: (target: EnvTarget, context: Context) => ExecutionEnv | undefined | Promise<ExecutionEnv | undefined>;

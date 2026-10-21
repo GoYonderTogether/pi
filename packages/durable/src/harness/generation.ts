@@ -289,6 +289,21 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 				const result = harnessError("aborted", `Tool ${call.name} was aborted`);
 				await appendToolResult(tx, conversationId, call, result, { timestamp: runtime.now() });
 			}
+			if (ownsRun && live.run?.resumeOnInterrupt) {
+				delete live.run.resumeOnInterrupt;
+				const { users, reset } = await applyBoundary(tx, boundary, "postTools", runtime.now());
+				if (!reset) {
+					live.run.inputs.push(...users);
+					delete live.generation;
+					delete live.tools;
+					delete live.nestedTools;
+					handOver(live, runtime.taskId, await createGeneration(tx, conversationId));
+					return { status: "terminal", outcome: { status: "aborted" } };
+				}
+				await endRun(tx, live, conversationId, runtime.taskId, { status: "unanswered", reason: "reset" });
+				if (users.length > 0) await startRun(tx, conversationId, live, users);
+				return { status: "terminal", outcome: { status: "aborted" } };
+			}
 			await endRun(tx, live, conversationId, runtime.taskId, { status: "unanswered", reason: "aborted" });
 			if (ownsRun) {
 				const { users } = await applyBoundary(tx, boundary, "final", runtime.now());
@@ -568,6 +583,19 @@ async function answer(runtime: Runtime, message: AssistantMessage, context: Cont
 		// Queue modes are read on the Session line, when the boundary is decided.
 		const boundary = await prepareBoundary(tx, conversationId, runtime.settings);
 		const live = await tx.doc(LiveDoc, conversationId);
+		if (boundary.inbox.items.some((item) => item.mode === "steer")) {
+			const superseded = await appendAssistant(tx, conversationId, { ...message, stopReason: "aborted" });
+			const { users, reset } = await applyBoundary(tx, boundary, "postTools", runtime.now());
+			if (reset) {
+				await endRun(tx, live, conversationId, runtime.taskId, { status: "unanswered", reason: "reset" });
+				if (users.length > 0) await startRun(tx, conversationId, live, users);
+			} else {
+				if (live.run?.taskId === runtime.taskId) live.run.inputs.push(...users);
+				delete live.generation;
+				handOver(live, runtime.taskId, await createGeneration(tx, conversationId));
+			}
+			return { status: "terminal", outcome: { status: "completed", result: { entryId: superseded.id } } };
+		}
 		const entry = await appendAssistant(tx, conversationId, message);
 		const result: Next = { status: "terminal", outcome: { status: "completed", result: { entryId: entry.id } } };
 		const { users, reset } = await applyBoundary(tx, boundary, "final", runtime.now());

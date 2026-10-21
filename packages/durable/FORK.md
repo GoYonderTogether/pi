@@ -8,6 +8,7 @@ Only packages/durable is modified:
 
 - D28: beforeAgent host callback before task agent resolution; abort of one run continues queued inputs at the native final boundary.
 - D29: RunReceiptDoc records inputs, settlement and ending usage in the same transaction that settles the run.
+- D49: steer interrupts generation without cancelling tools; explicit interrupt cancels the active ownership scope and resumes the same run with queued inputs. Final-answer commits consume pending steers before settling, retaining superseded text as aborted history.
 - D44: shouldRetry generation hook overrides classification while native overflow/abort checks, retry budget and persisted deadlines remain authoritative. Exhaustion includes the retry count and final provider error.
 
 pi-ai 1.3.0 already caps retryDelayMs via maxAgentDelayMs; durable forwards this setting. Yonder maps yonder.yaml retry.maxDelayMs to it. No pi-ai fork is needed. chord, pi-ai and codemode stay upstream npm dependencies in the Yonder workspace.

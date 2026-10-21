@@ -63,10 +63,24 @@ export class Submissions {
 	/** Admit a submission in one commit; see `admitSubmission()`. */
 	async submit(conversationId: ConversationId, draft: SubmissionDraft, context: Context): Promise<Submission> {
 		this.#resume();
-		const id = await this.#session.commitWith(
-			(tx) => admitSubmission(tx, conversationId, draft, this.#now(), this.#queueModes()),
-			context,
-		);
+		const id = await this.#session.commitWith(async (tx) => {
+			const live = await tx.doc(LiveDoc, conversationId);
+			const current = live.run === undefined ? undefined : await tx.task(live.run.taskId);
+			const existing =
+				draft.requestId === undefined ? undefined : await tx.submissionByRequest(conversationId, draft.requestId);
+			const interrupt =
+				existing === undefined &&
+				draft.type === "input" &&
+				current !== undefined &&
+				(draft.whenBusy === "interrupt" || (draft.whenBusy === "steer" && live.tools === undefined));
+			const id = await admitSubmission(tx, conversationId, draft, this.#now(), this.#queueModes());
+			// Steer preserves running tools; explicit interrupt cancels their ordinary ownership scope too.
+			if (interrupt && live.run !== undefined && current.kind === "pi.generation" && !current.abortRequested) {
+				live.run.resumeOnInterrupt = true;
+				tx.setTask({ ...current, abortRequested: true });
+			}
+			return id;
+		}, context);
 		return new SubmissionHandle(id, this);
 	}
 
@@ -214,7 +228,7 @@ export async function admitSubmission(
 		const items = (boundary?.inbox ?? (await tx.doc(InboxDoc, conversationId))).items;
 		if (draft.type === "write") items.push({ id, mode: "write", entry: value as JsonObject });
 		else {
-			const mode = draft.whenBusy === "steer" ? "steer" : "followUp";
+			const mode = draft.whenBusy === "steer" || draft.whenBusy === "interrupt" ? "steer" : "followUp";
 			const content = value as JsonRepresentation<UserInput>;
 			const entry = draft.entry === undefined ? {} : { entry: pickInputEntry(draft.entry) };
 			items.push({ id, mode, content, ...entry });

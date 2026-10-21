@@ -2,6 +2,7 @@ import { copyJson, type Draft, type JsonRepresentation } from "@earendil-works/c
 import { defineDoc } from "../documents.ts";
 import { UserEntry } from "../entries.ts";
 import type { ConversationId, EntryDraft, EntryId, EntryRecord, JsonObject, SubmissionId, Tx } from "../types.ts";
+import { LiveDoc } from "./live.ts";
 import type { InputEntry, QueueMode, Settings, UserInput } from "./types.ts";
 
 /** A queued submission: user input for a run, with the entry it is placed as when not `pi.user`, or an entry write. */
@@ -158,6 +159,8 @@ export async function removeInboxItem(tx: Tx, conversationId: ConversationId, id
  * `unanswered` with `aborted` and leaves the inbox; queued writes stay for later placement.
  */
 export async function withdrawQueuedInputs(tx: Tx, conversationId: ConversationId): Promise<void> {
+	const live = await tx.doc(LiveDoc, conversationId);
+	if (live.run) delete live.run.resumeOnInterrupt;
 	const items = (await tx.doc(InboxDoc, conversationId)).items;
 	for (let index = items.length - 1; index >= 0; index--) {
 		const item = items[index]!;

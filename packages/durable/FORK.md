@@ -16,3 +16,5 @@ pi-ai 1.3.0 already caps retryDelayMs via maxAgentDelayMs; durable forwards this
 New tests use authenticated loopback HTTP failures, never synthetic model streams. Existing upstream tests and helpers are retained; exhaustion detail and abort-boundary inbox/compaction assertions reflect the fork's changed behavior.
 
 Yonder model fallback: optional conversation agent model chain, run-scoped durable index and consecutive error count, atomic with native retry checkpoints. Successful responses clear the count; new runs start at primary. Overflow/abort retain native behavior.
+
+Compaction summarization follows the same configured fallback chain, checkpointing each model and its attempt budget. Blocking compaction advances its parent run to the fallback model; manual compaction does not change an in-flight generation.

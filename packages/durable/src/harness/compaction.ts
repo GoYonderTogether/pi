@@ -1,6 +1,7 @@
 import type { Context, Draft } from "@earendil-works/chord";
 import type { AssistantMessage, Message, ModelThinkingLevel, SimpleStreamOptions } from "@earendil-works/pi-ai";
 import { calculateContextTokens, estimateMessageTokens } from "@earendil-works/pi-ai/utils/estimate";
+import { isContextOverflow } from "@earendil-works/pi-ai/utils/overflow";
 import { isRetryableAssistantError, retryDelayMs } from "@earendil-works/pi-ai/utils/retry";
 import { CompactionEntry } from "../entries.ts";
 import { defineTask } from "../tasks.ts";
@@ -170,8 +171,11 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 				},
 			];
 			const { deferred: _deferred, ...forwarded } = streamOptions;
+			const agent = await runtime.agent(context);
+			const fallback = agent.modelFallbacks?.models.length ? agent.modelFallbacks : undefined;
 			const options: SimpleStreamOptions = {
 				...forwarded,
+				...(fallback ? { maxRetries: 0 } : {}),
 				cacheRetention: "none",
 				maxTokens,
 				signal: runtime.signal,
@@ -183,11 +187,17 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 			runtime.signal.throwIfAborted();
 			const summary = summaryText(message);
 			const policy = runtime.settings.retry;
+			const index =
+				fallback?.models.findIndex((model) => model.provider === ref.provider && model.modelId === ref.modelId) ??
+				-1;
+			const nextModel = fallback?.models[index + 1];
+			const advance = fallback !== undefined && attempt >= fallback.after && nextModel !== undefined;
 			const retry =
 				message.stopReason === "error" &&
-				isRetryableAssistantError(message) &&
 				policy.enabled &&
-				attempt <= policy.maxRetries;
+				(fallback !== undefined
+					? !isContextOverflow(message) && (advance || attempt < fallback.after)
+					: isRetryableAssistantError(message) && attempt <= policy.maxRetries);
 			const until = retry ? runtime.now() + retryDelayMs(policy, attempt) : 0;
 			await runtime.commit(async (tx, current): Promise<Next> => {
 				await recordUsage(
@@ -202,7 +212,20 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 				if (retry) {
 					const status = compactionStatus(live, runtime.taskId);
 					if (status !== undefined) status.retry = { at: until, error: message.errorMessage ?? "" };
-					return { status: "running", checkpoint: { phase: "retry", ...request, until } };
+					if (advance && current.owner !== undefined && live.run)
+						live.run.modelFallback = { index: index + 2, failures: 0 };
+					const next = advance
+						? {
+								...request,
+								model: nextModel,
+								attempt: 0,
+								maxTokens: Math.min(
+									maxTokens,
+									runtime.models.getModel(nextModel.provider, nextModel.modelId)?.maxTokens || maxTokens,
+								),
+							}
+						: request;
+					return { status: "running", checkpoint: { phase: "retry", ...next, until } };
 				}
 				const text = summaryFailure(message);
 				failCompactionStatus(live, runtime.taskId, text);

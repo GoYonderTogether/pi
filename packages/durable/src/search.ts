@@ -48,7 +48,7 @@ export function tokenize(text: string): string[] {
 		.map(stem);
 }
 
-/** Okapi BM25 (k1 1.2, b 0.75): the names of the best matches, best first; ties keep document order. */
+/** BM25 with Hermes' rarest-term gate, coverage floor and exact-name priority; see FORK.md. */
 export function rankDocuments(query: string, documents: readonly SearchDocument[], limit: number): string[] {
 	const k1 = 1.2;
 	const b = 0.75;
@@ -67,11 +67,21 @@ export function rankDocuments(query: string, documents: readonly SearchDocument[
 			return [term, Math.log(1 + (documents.length - frequency + 0.5) / (frequency + 0.5))] as const;
 		}),
 	);
+	const gate = queryTerms.reduce((best, term) => (idf.get(term)! > idf.get(best)! ? term : best));
+	const answerable = queryTerms.filter((term) => termCounts.some((counts) => counts.has(term)));
+	const required = answerable.length < 4 ? 1 : Math.ceil(answerable.length / 2);
+	const exactName = query.trim().toLowerCase();
 	const matches: { name: string; score: number }[] = [];
 	documents.forEach((document, index) => {
+		if (document.name.toLowerCase() === exactName) {
+			matches.push({ name: document.name, score: Infinity });
+			return;
+		}
+		const counts = termCounts[index]!;
+		if (!counts.has(gate) || answerable.filter((term) => counts.has(term)).length < required) return;
 		let score = 0;
 		for (const term of queryTerms) {
-			const count = termCounts[index]!.get(term);
+			const count = counts.get(term);
 			if (!count) continue;
 			const norm = k1 * (1 - b + (b * lengths[index]!) / averageLength);
 			score += (idf.get(term) ?? 0) * ((count * (k1 + 1)) / (count + norm));

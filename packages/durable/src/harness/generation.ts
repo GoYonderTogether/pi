@@ -353,7 +353,7 @@ function thresholdCompaction(
 		planned.flatMap((entry) => entry.model ?? []),
 	);
 	const blocking = contextWindow - policy.reserveTokens;
-	const background = blocking - policy.backgroundTokens;
+	const background = Math.min(blocking - policy.backgroundTokens, policy.backgroundAtTokens ?? Infinity);
 	const over =
 		tokens > blocking ? "blocking" : policy.backgroundTokens > 0 && tokens > background ? "background" : undefined;
 	if (over === undefined || selectCut(view, policy.keepRecentTokens) === undefined) return undefined;

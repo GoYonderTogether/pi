@@ -948,32 +948,39 @@ async function compactionTasks(chat: Chat) {
 }
 
 describe("background threshold compaction", () => {
-	it("starts above the background threshold without blocking the run; idle waits and Esc ignore it", async () => {
-		const chat = await open({ contextWindow: 2000 });
-		await history(chat);
-		chat.setup.settings.compaction = BACKGROUND;
-		const gate = deferred();
-		const reached = deferred();
-		chat.faux.summaries.push(gated(gate, summary(), reached));
-		await turn(chat, text("u4", 100), text("a4", 100));
-		await reached.promise;
-		const [task] = await compactionTasks(chat);
-		expect(task).toMatchObject({ background: true, input: { reason: "threshold" } });
-		expect(task!.owner).toBeUndefined();
-		expect((await live(chat)).compactions).toEqual([
-			{ taskId: task!.id, reason: "threshold", blocking: false, attempt: 1 },
-		]);
-		// Background work: neither conversation idle nor Esc waits for or stops it.
-		await chat.root.waitForIdle(context);
-		await chat.root.abort(context);
-		expect((await chat.harness.getTask(task!.id, context))?.state.status).toBe("running");
-		gate.resolve();
-		const outcome = await result(chat, task!.id as TaskId<CompactionResult>);
-		expect(outcome.status).toBe("completed");
-		expect((await kinds(chat.root)).at(-1)).toBe("pi.compaction");
-		expect(firstUserText((await chat.root.context(context)).messages)).toContain("SUMMARY");
-		await chat.harness.close(context);
-	});
+	it.each([
+		{ contextWindow: 2000, policy: BACKGROUND },
+		{ contextWindow: 1_000_000, policy: { ...BACKGROUND, backgroundAtTokens: 500 } },
+		{ contextWindow: 2000, policy: { ...BACKGROUND, backgroundAtTokens: 272_000 } },
+	])(
+		"starts above the background threshold without blocking the run ($contextWindow); idle waits and Esc ignore it",
+		async ({ contextWindow, policy }) => {
+			const chat = await open({ contextWindow });
+			await history(chat);
+			chat.setup.settings.compaction = policy;
+			const gate = deferred();
+			const reached = deferred();
+			chat.faux.summaries.push(gated(gate, summary(), reached));
+			await turn(chat, text("u4", 100), text("a4", 100));
+			await reached.promise;
+			const [task] = await compactionTasks(chat);
+			expect(task).toMatchObject({ background: true, input: { reason: "threshold" } });
+			expect(task!.owner).toBeUndefined();
+			expect((await live(chat)).compactions).toEqual([
+				{ taskId: task!.id, reason: "threshold", blocking: false, attempt: 1 },
+			]);
+			// Background work: neither conversation idle nor Esc waits for or stops it.
+			await chat.root.waitForIdle(context);
+			await chat.root.abort(context);
+			expect((await chat.harness.getTask(task!.id, context))?.state.status).toBe("running");
+			gate.resolve();
+			const outcome = await result(chat, task!.id as TaskId<CompactionResult>);
+			expect(outcome.status).toBe("completed");
+			expect((await kinds(chat.root)).at(-1)).toBe("pi.compaction");
+			expect(firstUserText((await chat.root.context(context)).messages)).toContain("SUMMARY");
+			await chat.harness.close(context);
+		},
+	);
 
 	for (const [name, policy] of [
 		["disabled", { ...BACKGROUND, enabled: false }],

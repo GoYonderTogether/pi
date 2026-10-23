@@ -508,6 +508,8 @@ export type CompactionPolicy = {
 	keepRecentTokens: number;
 	/** Background compaction starts `backgroundTokens` below the blocking threshold; `0` disables it. */
 	backgroundTokens: number;
+	/** Start background compaction by this absolute token count, unless the native threshold is earlier. */
+	backgroundAtTokens?: number;
 };
 
 /**

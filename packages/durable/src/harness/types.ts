@@ -802,7 +802,7 @@ export interface ToolHooks {
 }
 
 /** Hooks of the built-in compaction task. */
-export interface CompactionHooks {
+export interface CompactionHooks extends Pick<GenerationHooks, "shouldRetry"> {
 	/**
 	 * After range selection, before summarizing; the first decision wins. `entries` are the active entries the summary
 	 * replaces, the head marker first, and `messages` their model context, the summarizer's source; `firstKept` is the

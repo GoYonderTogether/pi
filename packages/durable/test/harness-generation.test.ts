@@ -195,7 +195,15 @@ describe("generation", () => {
 		const settled = await (await root.submit({ type: "input", content: "hi" }, context)).wait(context);
 		expect(settled.status).toBe("done");
 		const entries = await allEntries(root);
-		expect(entries.map((entry) => entry.kind)).toEqual(["pi.user", "pi.system", "pi.assistant", "pi.assistant"]);
+		expect(entries.map((entry) => entry.kind)).toEqual([
+			"pi.user",
+			"pi.system",
+			"pi.assistant",
+			"pi.model-attempt",
+			"pi.assistant",
+		]);
+		expect(entries[3]!.model).toBeUndefined();
+		expect(entries[3]!.data).toMatchObject({ operation: "generation", attempt: 1, action: "retry" });
 		expect((entries[2]!.model![0] as AssistantMessage).stopReason).toBe("error");
 		expect(values.some((value) => value.generation?.retry?.error === "503 Service Unavailable")).toBe(true);
 		expect(values.some((value) => value.generation?.attempt === 2)).toBe(true);
@@ -215,7 +223,13 @@ describe("generation", () => {
 			reason: "model_error",
 			detail: "Model retries exhausted (1 retries): 503 Service Unavailable",
 		});
-		expect((await allEntries(root)).map((entry) => entry.kind)).toEqual(["pi.user", "pi.assistant", "pi.assistant"]);
+		expect((await allEntries(root)).map((entry) => entry.kind)).toEqual([
+			"pi.user",
+			"pi.assistant",
+			"pi.model-attempt",
+			"pi.assistant",
+			"pi.model-attempt",
+		]);
 		expect(setup.faux.getPendingResponseCount()).toBe(1);
 		await harness.close(context);
 	});

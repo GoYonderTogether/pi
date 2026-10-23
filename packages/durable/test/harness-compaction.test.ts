@@ -901,7 +901,11 @@ describe("compaction outcomes", () => {
 	});
 
 	for (const [name, response, message] of [
-		["retries run out", failure("overloaded"), "Summarization failed: overloaded"],
+		[
+			"retries run out",
+			failure("overloaded"),
+			"Summarization failed: Model retries exhausted (2 retries): overloaded",
+		],
 		["a non-retryable error", failure("bad request"), "Summarization failed: bad request"],
 		[
 			"a length stop",
@@ -1146,7 +1150,7 @@ describe("blocking threshold compaction", () => {
 			detail: "Compaction failed: Summarization failed: bad request",
 		});
 		expect(chat.faux.agentRequests).toHaveLength(requests);
-		expect((await kinds(chat.root)).at(-1)).toBe("pi.user");
+		expect((await kinds(chat.root)).slice(-2)).toEqual(["pi.user", "pi.model-attempt"]);
 		const state = await live(chat);
 		expect(state.compactions).toBeUndefined();
 		expect(state.compactionFailure).toMatchObject({
@@ -1273,7 +1277,7 @@ describe("overflow compaction", () => {
 			detail: OVERFLOW,
 		});
 		expect((await kinds(chat.root)).filter((kind) => kind === "pi.compaction")).toHaveLength(1);
-		expect((await kinds(chat.root)).at(-1)).toBe("pi.assistant");
+		expect((await kinds(chat.root)).slice(-2)).toEqual(["pi.assistant", "pi.model-attempt"]);
 		await chat.harness.close(context);
 	});
 

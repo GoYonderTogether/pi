@@ -1,8 +1,7 @@
 import type { Context, Draft } from "@earendil-works/chord";
 import type { AssistantMessage, Message, ModelThinkingLevel, SimpleStreamOptions } from "@earendil-works/pi-ai";
 import { calculateContextTokens, estimateMessageTokens } from "@earendil-works/pi-ai/utils/estimate";
-import { isContextOverflow } from "@earendil-works/pi-ai/utils/overflow";
-import { isRetryableAssistantError, retryDelayMs } from "@earendil-works/pi-ai/utils/retry";
+import { isRetryableAssistantError } from "@earendil-works/pi-ai/utils/retry";
 import { CompactionEntry } from "../entries.ts";
 import { defineTask } from "../tasks.ts";
 import type {
@@ -24,6 +23,7 @@ import {
 	type LiveState,
 	removeCompactionStatus,
 } from "./live.ts";
+import { modelRecovery } from "./model-recovery.ts";
 import { ensureProviderSessionId } from "./provider.ts";
 import { admitSubmission } from "./submissions.ts";
 import type {
@@ -41,6 +41,8 @@ export type CompactionInput = { reason: CompactionReason; instructions?: string 
 /** The pinned summarization request. */
 export type SummaryRequest = {
 	attempt: number;
+	/** Total attempts across models, for the same backoff as generation. Older checkpoints use attempt. */
+	totalAttempt?: number;
 	model: ModelRef;
 	fallback?: { models: ModelRef[]; after: number };
 	thinkingLevel: ModelThinkingLevel;
@@ -176,7 +178,7 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 			const fallback = request.fallback;
 			const options: SimpleStreamOptions = {
 				...forwarded,
-				...(fallback ? { maxRetries: 0 } : {}),
+				maxRetries: 0,
 				cacheRetention: "none",
 				maxTokens,
 				signal: runtime.signal,
@@ -192,14 +194,15 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 				fallback?.models.findIndex((model) => model.provider === ref.provider && model.modelId === ref.modelId) ??
 				-1;
 			const nextModel = fallback?.models[index + 1];
-			const advance = fallback !== undefined && attempt >= fallback.after && nextModel !== undefined;
-			const retry =
-				message.stopReason === "error" &&
-				policy.enabled &&
-				(fallback !== undefined
-					? !isContextOverflow(message) && (advance || attempt < fallback.after)
-					: isRetryableAssistantError(message) && attempt <= policy.maxRetries);
-			const until = retry ? runtime.now() + retryDelayMs(policy, attempt) : 0;
+			let retryable = isRetryableAssistantError(message);
+			await runtime.hooks.each("shouldRetry", async (hook) => {
+				const value = await hook(message, runtime, context);
+				if (value !== undefined) retryable = value;
+			});
+			const totalAttempt = request.totalAttempt ?? attempt;
+			const decision = modelRecovery(message, policy, totalAttempt, retryable, fallback, index + 1, attempt);
+			const { retry, advance } = decision;
+			const until = retry ? runtime.now() + decision.delay : 0;
 			await runtime.commit(async (tx, current): Promise<Next> => {
 				await recordUsage(
 					tx,
@@ -210,25 +213,41 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 				);
 				const live = await tx.doc(LiveDoc, runtime.conversationId);
 				if (summary !== undefined) return placeSummary(tx, runtime, current, live, firstKept, summary);
+				await tx.appendEntry(runtime.conversationId, {
+					kind: "pi.model-attempt",
+					data: {
+						task: runtime.taskId,
+						operation: "compaction",
+						model: ref,
+						attempt,
+						failures: attempt,
+						error: message.stopReason === "error" ? decision.error : summaryFailure(message),
+						action: advance ? "fallback" : retry ? "retry" : "stop",
+						...(advance ? { nextModel: nextModel! } : {}),
+						...(retry ? { retryAt: until } : {}),
+					},
+				});
 				if (retry) {
 					const status = compactionStatus(live, runtime.taskId);
 					if (status !== undefined) status.retry = { at: until, error: message.errorMessage ?? "" };
 					if (advance && current.owner !== undefined && live.run)
 						live.run.modelFallback = { index: index + 2, failures: 0 };
-					const next = advance
-						? {
-								...request,
-								model: nextModel,
-								attempt: 0,
-								maxTokens: Math.min(
-									maxTokens,
-									runtime.models.getModel(nextModel.provider, nextModel.modelId)?.maxTokens || maxTokens,
-								),
-							}
-						: request;
-					return { status: "running", checkpoint: { phase: "retry", ...next, until } };
+					const next =
+						advance && nextModel !== undefined
+							? {
+									...request,
+									model: nextModel,
+									attempt: 0,
+									maxTokens: Math.min(
+										maxTokens,
+										runtime.models.getModel(nextModel.provider, nextModel.modelId)?.maxTokens || maxTokens,
+									),
+								}
+							: request;
+					return { status: "running", checkpoint: { phase: "retry", ...next, totalAttempt, until } };
 				}
-				const text = summaryFailure(message);
+				const text =
+					message.stopReason === "error" ? `Summarization failed: ${decision.error}` : summaryFailure(message);
 				failCompactionStatus(live, runtime.taskId, text);
 				return {
 					status: "terminal",
@@ -246,7 +265,15 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 					status.attempt = attempt;
 					delete status.retry;
 				}
-				return { status: "running", checkpoint: { phase: "summarize", ...request, attempt } };
+				return {
+					status: "running",
+					checkpoint: {
+						phase: "summarize",
+						...request,
+						attempt,
+						totalAttempt: (request.totalAttempt ?? request.attempt) + 1,
+					},
+				};
 			}, context);
 		},
 	},

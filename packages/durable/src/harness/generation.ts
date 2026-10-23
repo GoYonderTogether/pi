@@ -10,7 +10,7 @@ import type {
 	ToolCall,
 } from "@earendil-works/pi-ai";
 import { isContextOverflow } from "@earendil-works/pi-ai/utils/overflow";
-import { isRetryableAssistantError, retryDelayMs } from "@earendil-works/pi-ai/utils/retry";
+import { isRetryableAssistantError } from "@earendil-works/pi-ai/utils/retry";
 import { getCurrentTools } from "@earendil-works/pi-ai/utils/transcript";
 import { AssistantEntry, ResetEntry, SystemEntry, UserEntry } from "../entries.ts";
 import type { ExecutionEnv } from "../env/index.ts";
@@ -31,6 +31,7 @@ import { createCompaction, estimateContext, selectCut } from "./compaction.ts";
 import { applyBoundary, prepareBoundary } from "./inbox.ts";
 import { assignJson } from "./json.ts";
 import { endRun, LiveDoc, type LiveState, type ToolSlot } from "./live.ts";
+import { modelRecovery } from "./model-recovery.ts";
 import { planSystemEntries, renderSections, replaySections } from "./prompt.ts";
 import { ensureProviderSessionId } from "./provider.ts";
 import { appendToolResult, harnessError, ToolTask, type ToolTaskResult } from "./tool.ts";
@@ -212,7 +213,7 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 			});
 			const options: SimpleStreamOptions = {
 				...streamOptions,
-				...((await runtime.agent(context)).modelFallbacks?.models.length ? { maxRetries: 0 } : {}),
+				maxRetries: 0,
 				signal: runtime.signal,
 				sessionId: await ensureProviderSessionId(runtime, context),
 				...(thinkingLevel === "off" ? {} : { reasoning: thinkingLevel }),
@@ -541,16 +542,26 @@ async function classify(
 	const current = (await runtime.snapshot(LiveDoc, conversationId, context))?.run?.modelFallback;
 	const index = current?.index ?? 0;
 	const failures = (current?.failures ?? 0) + 1;
-	const advance = fallback !== undefined && failures >= fallback.after && index < fallback.models.length;
-	const retry =
-		message.stopReason === "error" &&
-		!overflow &&
-		policy.enabled &&
-		(fallback !== undefined ? advance || failures < fallback.after : retryable && attempt <= policy.maxRetries);
-	const until = retry ? runtime.now() + retryDelayMs(policy, attempt) : 0;
+	const decision = modelRecovery(message, policy, attempt, retryable, fallback, index, failures);
+	const { retry, advance } = decision;
+	const until = retry ? runtime.now() + decision.delay : 0;
 	await runtime.commit(async (tx): Promise<Next> => {
 		const live = await tx.doc(LiveDoc, conversationId);
 		await appendAssistant(tx, conversationId, message);
+		await tx.appendEntry(conversationId, {
+			kind: "pi.model-attempt",
+			data: {
+				task: runtime.taskId,
+				operation: "generation",
+				model: ref,
+				attempt,
+				failures,
+				error: decision.error,
+				action: advance ? "fallback" : retry ? "retry" : "stop",
+				...(advance ? { nextModel: fallback!.models[index] } : {}),
+				...(retry ? { retryAt: until } : {}),
+			},
+		});
 		if (fallback && live.run && message.stopReason === "error" && !overflow)
 			live.run.modelFallback = { index: advance ? index + 1 : index, failures: advance ? 0 : failures };
 		if (retry) {
@@ -563,17 +574,7 @@ async function classify(
 			} as const;
 			return { status: "running", checkpoint };
 		}
-		const lastError = message.errorMessage ?? `Model response ended with stop reason ${message.stopReason}`;
-		const exhausted =
-			message.stopReason === "error" &&
-			!overflow &&
-			policy.enabled &&
-			(fallback !== undefined ? !retry : retryable && attempt > policy.maxRetries);
-		const text = exhausted
-			? fallback
-				? `Model fallback chain exhausted (${fallback.after} consecutive failures per model): ${lastError}`
-				: `Model retries exhausted (${policy.maxRetries} retries): ${lastError}`
-			: lastError;
+		const text = decision.error;
 		await endRun(tx, live, conversationId, runtime.taskId, {
 			status: "unanswered",
 			reason: "model_error",

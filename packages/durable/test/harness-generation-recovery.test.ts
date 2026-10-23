@@ -193,6 +193,7 @@ describe("generation recovery", () => {
 		expect((await allEntries(opened.root)).map((entry) => entry.kind)).toEqual([
 			"pi.user",
 			"pi.assistant",
+			"pi.model-attempt",
 			"pi.assistant",
 		]);
 		await opened.harness.close(context);

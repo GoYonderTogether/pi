@@ -1,0 +1,28 @@
+import type { AssistantMessage } from "@earendil-works/pi-ai";
+import { isContextOverflow } from "@earendil-works/pi-ai/utils/overflow";
+import { retryDelayMs } from "@earendil-works/pi-ai/utils/retry";
+import type { ConversationRetryPolicy, ModelRef } from "./types.ts";
+
+/** Shared policy only; generation and compaction retain their native checkpoints and cancellation. */
+export function modelRecovery(
+	message: AssistantMessage,
+	policy: ConversationRetryPolicy,
+	attempt: number,
+	retryable: boolean,
+	fallback?: { models: ModelRef[]; after: number },
+	index = 0,
+	failures = attempt,
+) {
+	const eligible = message.stopReason === "error" && !isContextOverflow(message) && policy.enabled;
+	const advance = eligible && fallback !== undefined && failures >= fallback.after && index < fallback.models.length;
+	const retry =
+		eligible && (fallback ? advance || failures < fallback.after : retryable && attempt <= policy.maxRetries);
+	const exhausted = eligible && !retry && (fallback !== undefined || (retryable && attempt > policy.maxRetries));
+	const lastError = message.errorMessage ?? `Model response ended with stop reason ${message.stopReason}`;
+	const error = exhausted
+		? fallback
+			? `Model fallback chain exhausted (${fallback.after} consecutive failures per model): ${lastError}`
+			: `Model retries exhausted (${policy.maxRetries} retries): ${lastError}`
+		: lastError;
+	return { retry, advance, error, delay: retry ? retryDelayMs(policy, attempt) : 0 };
+}

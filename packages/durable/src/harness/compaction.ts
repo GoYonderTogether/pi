@@ -42,6 +42,7 @@ export type CompactionInput = { reason: CompactionReason; instructions?: string 
 export type SummaryRequest = {
 	attempt: number;
 	model: ModelRef;
+	fallback?: { models: ModelRef[]; after: number };
 	thinkingLevel: ModelThinkingLevel;
 	streamOptions: ConversationStreamOptions;
 	maxTokens: number;
@@ -142,6 +143,7 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 			const request: SummaryRequest = {
 				attempt: 1,
 				model: ref,
+				...(agent.modelFallbacks?.models.length ? { fallback: agent.modelFallbacks } : {}),
 				thinkingLevel: agent.thinkingLevel,
 				streamOptions: settings.stream,
 				maxTokens: Math.min(
@@ -171,8 +173,7 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 				},
 			];
 			const { deferred: _deferred, ...forwarded } = streamOptions;
-			const agent = await runtime.agent(context);
-			const fallback = agent.modelFallbacks?.models.length ? agent.modelFallbacks : undefined;
+			const fallback = request.fallback;
 			const options: SimpleStreamOptions = {
 				...forwarded,
 				...(fallback ? { maxRetries: 0 } : {}),

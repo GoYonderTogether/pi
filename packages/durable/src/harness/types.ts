@@ -404,6 +404,8 @@ export interface Registry<Tool extends ToolRegistration = ToolRegistration> exte
 /** Stored choices of one conversation; names, not objects. Unset fields follow the host. */
 export type AgentState = {
 	model?: ModelRef;
+	/** Yonder: ordered fallbacks, each allowed `after` consecutive errors. */
+	modelFallbacks?: { models: ModelRef[]; after: number };
 	thinkingLevel?: ModelThinkingLevel;
 	/** An array selects exactly these extensions, in order. An object edits the host default selection. */
 	extensions?: string[] | { add?: string[]; remove?: string[] };
@@ -428,6 +430,7 @@ export type AgentState = {
 /** A change to `pi.agent`: a given field replaces the stored one, `null` clears it, `undefined` changes nothing. */
 export type AgentChange = {
 	readonly model?: ModelRef | null;
+	readonly modelFallbacks?: { models: ModelRef[]; after: number } | null;
 	readonly thinkingLevel?: ModelThinkingLevel | null;
 	readonly extensions?:
 		| readonly Extension[]
@@ -446,6 +449,7 @@ export type AgentChange = {
 /** A conversation's agent resolved against a registry snapshot and the settings. */
 export type Agent<Tool extends ToolRegistration = ToolRegistration> = {
 	readonly model?: ModelRef;
+	readonly modelFallbacks?: { models: ModelRef[]; after: number };
 	readonly thinkingLevel: ModelThinkingLevel;
 	readonly extensions: readonly Extension<Tool>[];
 	/** The tools a request offers, in order: enabled, callable by the model, and selected by `modelTools`. */

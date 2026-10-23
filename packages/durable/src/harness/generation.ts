@@ -212,6 +212,7 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 			});
 			const options: SimpleStreamOptions = {
 				...streamOptions,
+				...((await runtime.agent(context)).modelFallbacks?.models.length ? { maxRetries: 0 } : {}),
 				signal: runtime.signal,
 				sessionId: await ensureProviderSessionId(runtime, context),
 				...(thinkingLevel === "off" ? {} : { reasoning: thinkingLevel }),
@@ -535,12 +536,23 @@ async function classify(
 		if (decision !== undefined) retryable = decision;
 	});
 	// An overflow is never retried: only a compaction can make the next request fit.
+	const agent = await runtime.agent(context);
+	const fallback = agent.modelFallbacks?.models.length ? agent.modelFallbacks : undefined;
+	const current = (await runtime.snapshot(LiveDoc, conversationId, context))?.run?.modelFallback;
+	const index = current?.index ?? 0;
+	const failures = (current?.failures ?? 0) + 1;
+	const advance = fallback !== undefined && failures >= fallback.after && index < fallback.models.length;
 	const retry =
-		message.stopReason === "error" && !overflow && retryable && policy.enabled && attempt <= policy.maxRetries;
+		message.stopReason === "error" &&
+		!overflow &&
+		policy.enabled &&
+		(fallback !== undefined ? advance || failures < fallback.after : retryable && attempt <= policy.maxRetries);
 	const until = retry ? runtime.now() + retryDelayMs(policy, attempt) : 0;
 	await runtime.commit(async (tx): Promise<Next> => {
 		const live = await tx.doc(LiveDoc, conversationId);
 		await appendAssistant(tx, conversationId, message);
+		if (fallback && live.run && message.stopReason === "error" && !overflow)
+			live.run.modelFallback = { index: advance ? index + 1 : index, failures: advance ? 0 : failures };
 		if (retry) {
 			live.generation = { attempt, retry: { at: until, error: message.errorMessage ?? "" } };
 			const checkpoint = {
@@ -553,8 +565,15 @@ async function classify(
 		}
 		const lastError = message.errorMessage ?? `Model response ended with stop reason ${message.stopReason}`;
 		const exhausted =
-			message.stopReason === "error" && !overflow && retryable && policy.enabled && attempt > policy.maxRetries;
-		const text = exhausted ? `Model retries exhausted (${policy.maxRetries} retries): ${lastError}` : lastError;
+			message.stopReason === "error" &&
+			!overflow &&
+			policy.enabled &&
+			(fallback !== undefined ? !retry : retryable && attempt > policy.maxRetries);
+		const text = exhausted
+			? fallback
+				? `Model fallback chain exhausted (${fallback.after} consecutive failures per model): ${lastError}`
+				: `Model retries exhausted (${policy.maxRetries} retries): ${lastError}`
+			: lastError;
 		await endRun(tx, live, conversationId, runtime.taskId, {
 			status: "unanswered",
 			reason: "model_error",
@@ -736,6 +755,10 @@ async function appendAssistant(
 	conversationId: ConversationId,
 	message: AssistantMessage,
 ): Promise<TypedEntry<never>> {
+	if (["stop", "length", "toolUse"].includes(message.stopReason)) {
+		const live = await tx.doc(LiveDoc, conversationId);
+		if (live.run?.modelFallback) live.run.modelFallback.failures = 0;
+	}
 	await recordUsage(tx, conversationId, "models", `${message.provider}/${message.model}`, message.usage);
 	return tx.appendEntry(AssistantEntry, conversationId, { model: [message] });
 }

@@ -20,7 +20,9 @@ export {
 	type CompactionCheckpoint,
 	type CompactionInput,
 	CompactionTask,
+	estimateContext,
 	type SummaryRequest,
+	selectCut,
 } from "./harness/compaction.ts";
 export { defineExtension, defineTool, hook, section, wrapSection, wrapTool } from "./harness/define.ts";
 export {

@@ -114,6 +114,14 @@ function applyChange(state: Draft<AgentState>, change: AgentChange): void {
 		else state[key] = value as Draft<AgentState>[K];
 	};
 	set("model", change.model === undefined || change.model === null ? change.model : { ...change.model });
+	if (change.modelFallbacks && (!Number.isSafeInteger(change.modelFallbacks.after) || change.modelFallbacks.after < 1))
+		throw new Error("modelFallbacks.after must be a positive safe integer");
+	set(
+		"modelFallbacks",
+		change.modelFallbacks == null
+			? change.modelFallbacks
+			: { models: change.modelFallbacks.models.map((model) => ({ ...model })), after: change.modelFallbacks.after },
+	);
 	set("thinkingLevel", change.thinkingLevel);
 	const extensions = change.extensions;
 	set(
@@ -232,6 +240,7 @@ export function resolveAgent<Tool extends ToolRegistration>(
 
 	const agent: Agent<Tool> = {
 		...(state?.model === undefined ? {} : { model: state.model }),
+		...(state?.modelFallbacks === undefined ? {} : { modelFallbacks: state.modelFallbacks }),
 		thinkingLevel: state?.thinkingLevel ?? "off",
 		extensions,
 		tools,

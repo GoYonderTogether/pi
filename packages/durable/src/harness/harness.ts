@@ -226,7 +226,11 @@ class HarnessImpl<Tool extends ToolRegistration> extends SessionImpl implements 
 	): Promise<Agent<Tool>> {
 		const registry = snapshot ?? this.#options.registry.snapshot();
 		const state = await this.snapshot(AgentDoc, id, context);
-		return resolveAgent(state, registry, resolveSettings(this.#options.settings), this.#report);
+		const agent = resolveAgent(state, registry, resolveSettings(this.#options.settings), this.#report);
+		const live = await this.snapshot(LiveDoc, id, context);
+		const index = live?.run?.modelFallback?.index ?? 0;
+		const model = index > 0 ? agent.modelFallbacks?.models[index - 1] : undefined;
+		return model === undefined ? agent : { ...agent, model };
 	}
 
 	/** Build a conversation's environment from its current `cwd`; `undefined` without an `env` option. */

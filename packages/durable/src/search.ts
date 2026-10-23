@@ -71,9 +71,11 @@ export function rankDocuments(query: string, documents: readonly SearchDocument[
 	const answerable = queryTerms.filter((term) => termCounts.some((counts) => counts.has(term)));
 	const required = answerable.length < 4 ? 1 : Math.ceil(answerable.length / 2);
 	const exactName = query.trim().toLowerCase();
+	// A named tool is still explicit intent when surrounded by action words or Chinese prose.
+	const identifiers = new Set(exactName.match(/[a-z0-9]+(?:[_.-][a-z0-9]+)+/g) ?? []);
 	const matches: { name: string; score: number }[] = [];
 	documents.forEach((document, index) => {
-		if (document.name.toLowerCase() === exactName) {
+		if (document.name.toLowerCase() === exactName || identifiers.has(document.name.toLowerCase())) {
 			matches.push({ name: document.name, score: Infinity });
 			return;
 		}

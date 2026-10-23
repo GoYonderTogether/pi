@@ -16,3 +16,20 @@ it("keeps a service's intent, rejects incidental matches and prioritizes an exac
 		"cron_manage",
 	]);
 });
+
+it("recognizes an explicit tool identifier despite unknown surrounding words without matching partial names", () => {
+	const tools = [
+		{ name: "task_run", text: "Delegate bounded work to a task" },
+		{ name: "read", text: "Read a file" },
+		{ name: "browser-skill_tabs", text: "List browser tabs" },
+		{ name: "admin.tools.list", text: "List admin tools" },
+	];
+	// Production incident: the unknown word 'subagent' used to gate out the exact named tool.
+	expect(rankDocuments("task_run delegate subagent", tools, 1)).toEqual(["task_run"]);
+	expect(rankDocuments("请加载 `TASK_RUN`：并行派发子任务", tools, 1)).toEqual(["task_run"]);
+	expect(rankDocuments("browser-skill_tabs 列出浏览器标签", tools, 1)).toEqual(["browser-skill_tabs"]);
+	expect(rankDocuments("admin.tools.list 未知词", tools, 1)).toEqual(["admin.tools.list"]);
+	expect(rankDocuments("task_run_extra subagent", tools, 3)).toEqual([]);
+	expect(rankDocuments("task_run.extra subagent", tools, 3)).toEqual([]);
+	expect(rankDocuments("read gmail", tools, 3)).toEqual([]);
+});

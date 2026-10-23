@@ -648,7 +648,8 @@ async function startToolRound(
 		request.messages ?? (await runtime.context(conversationId, context, { at: request.cutoff })).messages;
 	const offered = new Set(getCurrentTools(messages).map((tool) => tool.name));
 	// Read as the round starts; a tool is resolved as its tool task resolves it.
-	const tools = (await runtime.agent(context)).tools;
+	const agent = await runtime.agent(context);
+	const tools = agent.tools;
 	const sequential =
 		runtime.settings.toolExecution === "sequential" ||
 		calls.some(
@@ -663,7 +664,13 @@ async function startToolRound(
 		const pending: string[] = [];
 		for (const call of calls) {
 			if (!offered.has(call.name)) {
-				const unavailable = harnessError("tool_unavailable", `Tool ${call.name} is not available`);
+				const deferred = offered.has("tool_search") && agent.deferred.some((tool) => tool.name === call.name);
+				const unavailable = harnessError(
+					"tool_unavailable",
+					deferred
+						? `Tool ${call.name} is deferred and has not been loaded. Call tool_search with query ${JSON.stringify(call.name)} first, then retry in a later model call. This call was not executed.`
+						: `Tool ${call.name} is not available`,
+				);
 				const result = await appendToolResult(tx, conversationId, call, unavailable, { timestamp: runtime.now() });
 				slots.push({ callId: call.id, name: call.name, status: "done", entry: result.id });
 				continue;

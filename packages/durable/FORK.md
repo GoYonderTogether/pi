@@ -21,7 +21,7 @@ Compaction summarization follows the same configured fallback chain, checkpointi
 
 ## Deferred tool search relevance
 
-The existing BM25 scorer now follows Hermes Agent's exact-name priority, rarest-query-term gate and 50 percent answerable-term coverage floor (from four terms). The native pi tool loading, call validation, append-only tool declarations and compaction remain unchanged.
+The existing BM25 scorer now follows Hermes Agent's exact-name priority, rarest-query-term gate and 50 percent answerable-term coverage floor (from four terms). Explicit structured tool identifiers within a query also take priority, so `task_run delegate subagent` cannot lose its named tool to an unknown surrounding word. Rejected calls to selected deferred tools direct the model to search the exact name first, only when tool_search was offered; the call is not executed. Native pi tool loading, call validation, append-only tool declarations and compaction remain unchanged.
 
 Adapted from NousResearch/hermes-agent at bf0203a794a07aac3ff764972ab9087baa4e4f4e, tools/tool_search_catalog.py:
 https://github.com/NousResearch/hermes-agent/blob/bf0203a794a07aac3ff764972ab9087baa4e4f4e/tools/tool_search_catalog.py

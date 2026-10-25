@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 import type * as Fs from "node:fs";
 import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -5,7 +6,7 @@ import { join } from "node:path";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getOrThrow } from "../src/env/index.ts";
-import { NodeExecutionEnv } from "../src/env/node.ts";
+import { type LocalProcessSpawn, NodeExecutionEnv } from "../src/env/node.ts";
 
 // Longer than the shell's post-exit stdio grace period plus the descendant's delayed write.
 const SPILL_WRITE_DELAY_MS = 600;
@@ -49,14 +50,32 @@ afterEach(() => {
 	for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
+const localSpawn: LocalProcessSpawn = ({ program, args, cwd, env, stdin }) => {
+	const child = spawn(program, args, { cwd, env, detached: true, stdio: [stdin, "pipe", "pipe"] });
+	return {
+		child,
+		cancel: () => {
+			if (child.pid) {
+				try {
+					process.kill(-child.pid, "SIGKILL");
+				} catch {}
+			}
+		},
+		result: new Promise((resolve, reject) => {
+			child.once("error", reject);
+			child.once("close", (code, signal) => resolve({ code, signal }));
+		}),
+	};
+};
+
 describe("NodeExecutionEnv spill backpressure", () => {
-	it.skipIf(process.platform === "win32")(
-		"keeps inherited stdio open past the exit grace period while a spill write is pending",
-		async () => {
+	it.skipIf(process.platform === "win32").each(["default", "adapter"])(
+		"keeps inherited stdio open past the exit grace period while a spill write is pending (%s)",
+		async (mode) => {
 			const root = join(tmpdir(), `pi-durable-env-spill-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 			mkdirSync(root, { recursive: true });
 			tempDirs.push(root);
-			const env = new NodeExecutionEnv({ cwd: root });
+			const env = new NodeExecutionEnv({ cwd: root, localSpawn: mode === "adapter" ? localSpawn : undefined });
 			// The shell exits after the first chunk crosses the spill threshold and backpressures the spill. A background
 			// descendant retains stdout and writes after the post-exit grace period. Without the pending-spill guard,
 			// settlement destroys stdout before that descendant output is read.

@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- Optional `localSpawn` constructor callback on `NodeExecutionEnv` (`LocalProcessSpawn` from `/env/node`) lets hosts own local command spawning, cancellation and business exit status without replacing Pi's output decoding, spill or execution result contract. The default Node spawn path is unchanged.
+
 ## [1.3.0] - 2026-10-15
 
 ### Added

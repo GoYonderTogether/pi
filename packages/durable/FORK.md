@@ -21,6 +21,26 @@ Compaction summarization follows the same configured fallback chain, checkpointi
 
 Generation and compaction share modelRecovery for retry eligibility, fallback advancement, backoff and exhaustion errors. Both expose shouldRetry for host classification, and disable hidden SDK retries so native checkpoints own each attempt. Compaction retains a total attempt counter across fallback models for identical backoff. Failed attempts append non-model pi.model-attempt entries atomically with their next checkpoint or terminal outcome; these record task, operation, model, attempt, error and next action without entering model context.
 
+## Local process lifecycle adapter
+
+`NodeExecutionEnv` accepts optional `localSpawn: LocalProcessSpawn`, exported from
+`@earendil-works/pi-durable/env/node`. The synchronous callback receives
+`{ program, args: readonly string[], cwd, env: NodeJS.ProcessEnv, stdin: "pipe" | "ignore" }`
+after shell selection, cwd resolution and environment merging. It returns
+`{ child: ChildProcess, cancel: () => void, result: Promise<{ code: number | null, signal: NodeJS.Signals | null }> }`.
+`result` is required, not optional.
+
+The adapter owns process creation and cancellation. It may throw to fail closed; Pi never falls back to unmanaged spawn.
+It must expose raw stdout/stderr and requested stdin through `child`, provide an idempotent, non-throwing `cancel`,
+and settle `result` after child close on success, cancellation and spawn/protocol failure. A wrapper's own exit status
+must not replace the business command's status. Pi observes result rejection immediately, cancels on protocol failure,
+and waits for both its existing output-drain contract and the adapter result before returning.
+Timeout, abort, output callback failure, spill failure and environment cleanup use the adapter cancel function,
+including while output has ended but the adapter result is still pending. No bare child PID/PGID is used in this path.
+Output decoding, spill/backpressure, shell stdin transport and Result/ExecutionError remain Pi's responsibility.
+Without the option, Node's original detached spawn and process-tree cancellation remain in use.
+The seam contains no host-specific paths, capabilities or authorization logic.
+
 ## Deferred tool search relevance
 
 The existing BM25 scorer now follows Hermes Agent's exact-name priority, rarest-query-term gate and 50 percent answerable-term coverage floor (from four terms). Explicit structured tool identifiers within a query also take priority, so `task_run delegate subagent` cannot lose its named tool to an unknown surrounding word. Rejected calls to selected deferred tools direct the model to search the exact name first, only when tool_search was offered; the call is not executed. Native pi tool loading, call validation, append-only tool declarations and compaction remain unchanged.

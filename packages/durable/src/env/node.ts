@@ -600,6 +600,24 @@ function symlinkRefused(path: string, cause?: Error): FileError {
 	return new FileError("invalid", "Refusing to follow a symbolic link", path, cause);
 }
 
+/**
+ * Synchronously starts a local command, or throws without falling back to an unmanaged spawn.
+ * The child exposes the command's raw stdout/stderr and, when requested, piped stdin.
+ * cancel must be idempotent and non-throwing. result reports the command's status, not a wrapper's,
+ * and must settle after child close, including cancellation and spawn/protocol failures.
+ */
+export type LocalProcessSpawn = (request: {
+	program: string;
+	args: readonly string[];
+	cwd: string;
+	env: NodeJS.ProcessEnv;
+	stdin: "pipe" | "ignore";
+}) => {
+	child: ChildProcess;
+	cancel: () => void;
+	result: Promise<{ code: number | null; signal: NodeJS.Signals | null }>;
+};
+
 export class NodeExecutionEnv implements ExecutionEnv {
 	/** Every local environment sees the same files. */
 	readonly id: string = "node:local";
@@ -607,13 +625,21 @@ export class NodeExecutionEnv implements ExecutionEnv {
 	private shellPath?: string;
 	private shellEnv?: NodeJS.ProcessEnv;
 	private watchOptions: NodeWatchOptions;
-	private activeChildPids = new Set<number>();
+	private localSpawn?: LocalProcessSpawn;
+	private activeChildCancels = new Set<() => void>();
 
-	constructor(options: { cwd: string; shellPath?: string; shellEnv?: NodeJS.ProcessEnv; watch?: NodeWatchOptions }) {
+	constructor(options: {
+		cwd: string;
+		shellPath?: string;
+		shellEnv?: NodeJS.ProcessEnv;
+		watch?: NodeWatchOptions;
+		localSpawn?: LocalProcessSpawn;
+	}) {
 		this.cwd = options.cwd;
 		this.shellPath = options.shellPath;
 		this.shellEnv = options.shellEnv;
 		this.watchOptions = options.watch ?? {};
+		this.localSpawn = options.localSpawn;
 	}
 
 	async watch(
@@ -696,7 +722,9 @@ export class NodeExecutionEnv implements ExecutionEnv {
 			let timedOut = false;
 			let callbackError: ExecutionError | undefined;
 			let spillError: ExecutionError | undefined;
-			let child: ReturnType<typeof spawn> | undefined;
+			let child: ChildProcess | undefined;
+			let cancel: (() => void) | undefined;
+			let spawnResult: Promise<Result<{ code: number | null; signal: NodeJS.Signals | null }, Error>> | undefined;
 			let timeoutId: ReturnType<typeof setTimeout> | undefined;
 			const spillPrefix: SpillChunk[] = [];
 			let spillPath: string | undefined;
@@ -706,7 +734,7 @@ export class NodeExecutionEnv implements ExecutionEnv {
 			let spillBackpressured = false;
 
 			const onAbort = () => {
-				if (child?.pid) killProcessTree(child.pid);
+				cancel?.();
 			};
 			const failCallback = (error: unknown) => {
 				if (callbackError !== undefined) return;
@@ -735,7 +763,7 @@ export class NodeExecutionEnv implements ExecutionEnv {
 				settled = true;
 				if (timeoutId) clearTimeout(timeoutId);
 				if (signal) signal.removeEventListener("abort", onAbort);
-				if (child?.pid) this.activeChildPids.delete(child.pid);
+				this.activeChildCancels.delete(onAbort);
 				resolvePromise(result);
 			};
 			const pauseOutput = () => {
@@ -800,14 +828,33 @@ export class NodeExecutionEnv implements ExecutionEnv {
 			};
 
 			try {
-				child = spawn(program, args, {
-					cwd,
-					detached: process.platform !== "win32",
-					env: getShellEnv(this.shellEnv, options?.env, options?.inheritEnv),
-					stdio: [stdinCommand === undefined ? "ignore" : "pipe", "pipe", "pipe"],
-					windowsHide: true,
-				});
-				if (child.pid) this.activeChildPids.add(child.pid);
+				const env = getShellEnv(this.shellEnv, options?.env, options?.inheritEnv);
+				const stdin = stdinCommand === undefined ? "ignore" : "pipe";
+				if (this.localSpawn) {
+					const spawned = this.localSpawn({ program, args, cwd, env, stdin });
+					child = spawned.child;
+					cancel = spawned.cancel;
+					// Observe rejection before waiting on streams; a protocol failure must cancel the command.
+					spawnResult = spawned.result.then(
+						(value) => ok(value),
+						(error: unknown) => {
+							onAbort();
+							return err(toError(error));
+						},
+					);
+				} else {
+					child = spawn(program, args, {
+						cwd,
+						detached: process.platform !== "win32",
+						env,
+						stdio: [stdin, "pipe", "pipe"],
+						windowsHide: true,
+					});
+					cancel = () => {
+						if (child?.pid) killProcessTree(child.pid);
+					};
+				}
+				this.activeChildCancels.add(onAbort);
 				if (stdinCommand !== undefined) {
 					child.stdin?.on("error", () => {});
 					child.stdin?.end(stdinCommand);
@@ -853,43 +900,58 @@ export class NodeExecutionEnv implements ExecutionEnv {
 			child.stdout?.on("data", feed("stdout", stdoutDecoder));
 			child.stderr?.on("data", feed("stderr", stderrDecoder));
 
-			void waitForChildProcess(
-				child,
-				() =>
-					spillError === undefined &&
-					spillStart !== undefined &&
-					(spillStream === undefined || spillBackpressured),
-			).then(
-				async ({ code, signal: exitSignal }) => {
-					await finishSpill();
-					emit(stdoutDecoder.decode(), "stdout");
-					emit(stderrDecoder.decode(), "stderr");
-					if (callbackError) {
-						settle(err(callbackError));
-						return;
-					}
-					const interrupted = timedOut
-						? new ExecutionError("timeout", `timeout:${options?.timeout}`)
-						: signal?.aborted
-							? new ExecutionError("aborted", "aborted")
-							: undefined;
-					if (interrupted !== undefined) {
-						if (spillPath !== undefined) interrupted.spillPath = spillPath;
-						settle(err(interrupted));
-						return;
-					}
-					if (spillError) {
-						settle(err(spillError));
-						return;
-					}
-					// A process killed by a signal (e.g. OOM killer) has no exit code; map it
-					// to the conventional 128 + signal number so callers do not mistake it
-					// for a successful exit.
-					const exitCode = code ?? (exitSignal ? 128 + (osConstants.signals[exitSignal] ?? 0) : 1);
-					settle(ok({ exitCode, ...(spillPath === undefined ? {} : { spillPath }) }));
-				},
-				(error: Error) => settle(err(new ExecutionError("spawn_error", error.message, error))),
-			);
+			const streamResult: Promise<Result<{ code: number | null; signal: NodeJS.Signals | null }, Error>> =
+				waitForChildProcess(
+					child,
+					() =>
+						spillError === undefined &&
+						spillStart !== undefined &&
+						(spillStream === undefined || spillBackpressured),
+				).then(
+					(value) => ok(value),
+					(error: unknown) => {
+						if (this.localSpawn) onAbort();
+						return err(toError(error));
+					},
+				);
+			void Promise.all([streamResult, spawnResult]).then(async ([streams, spawned]) => {
+				if (!streams.ok) {
+					settle(err(new ExecutionError("spawn_error", streams.error.message, streams.error)));
+					return;
+				}
+				await finishSpill();
+				emit(stdoutDecoder.decode(), "stdout");
+				emit(stderrDecoder.decode(), "stderr");
+				if (callbackError) {
+					settle(err(callbackError));
+					return;
+				}
+				const interrupted = timedOut
+					? new ExecutionError("timeout", `timeout:${options?.timeout}`)
+					: signal?.aborted
+						? new ExecutionError("aborted", "aborted")
+						: undefined;
+				if (interrupted !== undefined) {
+					if (spillPath !== undefined) interrupted.spillPath = spillPath;
+					settle(err(interrupted));
+					return;
+				}
+				if (spillError) {
+					settle(err(spillError));
+					return;
+				}
+				const result = spawned ?? streams;
+				if (!result.ok) {
+					settle(err(new ExecutionError("spawn_error", result.error.message, result.error)));
+					return;
+				}
+				const { code, signal: exitSignal } = result.value;
+				// A process killed by a signal (e.g. OOM killer) has no exit code; map it
+				// to the conventional 128 + signal number so callers do not mistake it
+				// for a successful exit.
+				const exitCode = code ?? (exitSignal ? 128 + (osConstants.signals[exitSignal] ?? 0) : 1);
+				settle(ok({ exitCode, ...(spillPath === undefined ? {} : { spillPath }) }));
+			});
 		});
 	}
 
@@ -1219,8 +1281,8 @@ export class NodeExecutionEnv implements ExecutionEnv {
 	}
 
 	async cleanup(_context: Context): Promise<void> {
-		for (const pid of this.activeChildPids) killProcessTree(pid);
-		this.activeChildPids.clear();
+		for (const cancel of this.activeChildCancels) cancel();
+		this.activeChildCancels.clear();
 	}
 }
 export type { NodeWatchOptions } from "./node-watch.ts";

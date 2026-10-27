@@ -110,6 +110,23 @@ describe("model attempt statistics (deterministic data logic)", () => {
 		expect(value.usage.output).toBe(3);
 	});
 
+	it("rejects credential-shaped nested model labels and preserves supported wire modes", () => {
+		for (const label of [
+			"org/sk-secret",
+			"org/token_secret",
+			"org/api-key-secret",
+			"org/eyJsecret",
+			"https://secret",
+		]) {
+			const value = message();
+			Object.assign(value, { observation: { version: 1, reportedResponseModel: label } });
+			expect(observationSnapshot(value)).toMatchObject({ reportedResponseModel: null });
+		}
+		const value = message();
+		Object.assign(value, { observation: { version: 1, effort: { requested: "default", wire: { mode: "on" } } } });
+		expect(observationSnapshot(value)).toMatchObject({ effort: { requested: "default", wire: { mode: "on" } } });
+	});
+
 	it("classifies structured throw and cancellation without copying raw errors", () => {
 		const error = Object.assign(new Error("SECRET"), { status: 429, headers: { authorization: "SECRET" } });
 		const thrown = terminalObservation(start, 200, 100, undefined, error);

@@ -71,6 +71,11 @@ export async function allEntries(conversation: Conversation, callContext: Contex
 	return [...page.items].reverse();
 }
 
+/** Transcript-order assertions ignore additive telemetry; observation tests read allEntries explicitly. */
+export async function transcriptEntries(conversation: Conversation): Promise<EntryRecord[]> {
+	return (await allEntries(conversation)).filter((entry) => entry.kind !== "pi.model-observation");
+}
+
 /** Text of the first text content of a message. */
 export function textOf(message: Message | undefined): string | undefined {
 	if (message === undefined) return undefined;

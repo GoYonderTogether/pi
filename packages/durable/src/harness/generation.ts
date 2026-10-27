@@ -309,8 +309,8 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 				? await readCalls(runtime, checkpoint.assistant, checkpoint.pending, context)
 				: [];
 		await runtime.commit(async (tx) => {
-			await abortModelObservation(tx, conversationId, checkpoint, runtime.now());
 			const boundary = await prepareBoundary(tx, conversationId, runtime.settings);
+			await abortModelObservation(tx, conversationId, checkpoint, runtime.now());
 			const live = await tx.doc(LiveDoc, conversationId);
 			const ownsRun = live.run?.taskId === runtime.taskId;
 			await convertPartial(tx, live, conversationId);

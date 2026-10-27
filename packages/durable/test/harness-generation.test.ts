@@ -28,7 +28,16 @@ import {
 import { describe, expect, it } from "vitest";
 import { resolveSettings } from "../src/harness/agent.ts";
 import type { SessionImpl } from "../src/session/session.ts";
-import { allEntries, type ChatSetup, chatSetup, openChat, textOf, unanswered, waitFor } from "./chat-support.ts";
+import {
+	transcriptEntries as allEntries,
+	type ChatSetup,
+	chatSetup,
+	openChat,
+	allEntries as rawEntries,
+	textOf,
+	unanswered,
+	waitFor,
+} from "./chat-support.ts";
 import { addSection } from "./harness-support.ts";
 import { ControlledStorage, context } from "./session-support.ts";
 
@@ -317,6 +326,12 @@ describe("generation", () => {
 		const partial = (await live(harness, root))!.generation!.message!;
 		expect(await harness.abortTask(taskId, context)).toBe("marked");
 		expect(await submission.wait(context)).toMatchObject({ status: "unanswered", reason: "aborted" });
+		// Integration regression: telemetry must not write before prepareBoundary reads the native head.
+		const observed = (await rawEntries(root)).filter((entry) => entry.kind === "pi.model-observation");
+		expect(observed.map((entry) => entry.data)).toMatchObject([
+			{ phase: "start", attemptNo: 1 },
+			{ phase: "end", attemptNo: 1, status: "aborted", errorClass: "cancelled" },
+		]);
 		const entries = await allEntries(root);
 		expect(entries.map((entry) => entry.kind)).toEqual(["pi.user", "pi.assistant"]);
 		const converted = entries[1]!.model![0] as AssistantMessage;

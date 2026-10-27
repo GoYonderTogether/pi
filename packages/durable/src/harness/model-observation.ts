@@ -60,6 +60,7 @@ const effortValues = [
 	"enabled",
 	"disabled",
 	"auto",
+	"default",
 ];
 
 function object(value: unknown): Record<string, unknown> {
@@ -78,8 +79,8 @@ function label(value: unknown): string | null {
 	return typeof value === "string" &&
 		value.length <= 160 &&
 		/^[a-zA-Z0-9][a-zA-Z0-9._:/-]*$/.test(value) &&
-		!value.includes("://") &&
-		!/^(sk-|Bearer|eyJ)/i.test(value)
+		!value.includes("//") &&
+		!/(^|[/:])(sk[-_]|bearer|api[-_]?key|token[-_]|eyJ)/i.test(value)
 		? value
 		: null;
 }
@@ -112,7 +113,7 @@ export function observationSnapshot(message: AssistantMessage): JsonValue | null
 			clamped: choice(effort.clamped, effortValues),
 			wire: {
 				effort: typeof wire.effort === "number" ? number(wire.effort) : choice(wire.effort, effortValues),
-				mode: choice(wire.mode, effortValues),
+				mode: choice(wire.mode, ["enabled", "disabled", "adaptive", "auto", "on", "off"]),
 				budgetTokens: number(wire.budgetTokens),
 			},
 			serverActual: null,

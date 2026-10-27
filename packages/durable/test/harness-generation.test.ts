@@ -29,7 +29,16 @@ import {
 import { describe, expect, it } from "vitest";
 import { resolveSettings } from "../src/harness/agent.ts";
 import type { SessionImpl } from "../src/session/session.ts";
-import { allEntries, type ChatSetup, chatSetup, openChat, textOf, unanswered, waitFor } from "./chat-support.ts";
+import {
+	transcriptEntries as allEntries,
+	type ChatSetup,
+	chatSetup,
+	openChat,
+	allEntries as rawEntries,
+	textOf,
+	unanswered,
+	waitFor,
+} from "./chat-support.ts";
 import { addSection } from "./harness-support.ts";
 import { ControlledStorage, context } from "./session-support.ts";
 
@@ -196,7 +205,15 @@ describe("generation", () => {
 		const settled = await (await root.submit({ type: "input", content: "hi" }, context)).wait(context);
 		expect(settled.status).toBe("done");
 		const entries = await allEntries(root);
-		expect(entries.map((entry) => entry.kind)).toEqual(["pi.user", "pi.system", "pi.assistant", "pi.assistant"]);
+		expect(entries.map((entry) => entry.kind)).toEqual([
+			"pi.user",
+			"pi.system",
+			"pi.assistant",
+			"pi.model-attempt",
+			"pi.assistant",
+		]);
+		expect(entries[3]!.model).toBeUndefined();
+		expect(entries[3]!.data).toMatchObject({ operation: "generation", attempt: 1, action: "retry" });
 		expect((entries[2]!.model![0] as AssistantMessage).stopReason).toBe("error");
 		expect(values.some((value) => value.generation?.retry?.error === "503 Service Unavailable")).toBe(true);
 		expect(values.some((value) => value.generation?.attempt === 2)).toBe(true);
@@ -211,8 +228,18 @@ describe("generation", () => {
 		const { harness, root } = await openChat(new MemoryStorage(), setup);
 		harness.resume();
 		const settled = await (await root.submit({ type: "input", content: "hi" }, context)).wait(context);
-		expect(settled).toMatchObject({ status: "unanswered", reason: "model_error", detail: "503 Service Unavailable" });
-		expect((await allEntries(root)).map((entry) => entry.kind)).toEqual(["pi.user", "pi.assistant", "pi.assistant"]);
+		expect(settled).toMatchObject({
+			status: "unanswered",
+			reason: "model_error",
+			detail: "Model retries exhausted (1 retries): 503 Service Unavailable",
+		});
+		expect((await allEntries(root)).map((entry) => entry.kind)).toEqual([
+			"pi.user",
+			"pi.assistant",
+			"pi.model-attempt",
+			"pi.assistant",
+			"pi.model-attempt",
+		]);
 		expect(setup.faux.getPendingResponseCount()).toBe(1);
 		await harness.close(context);
 	});
@@ -300,6 +327,12 @@ describe("generation", () => {
 		const partial = (await live(harness, root))!.generation!.message!;
 		expect(await harness.abortTask(taskId, context)).toBe("marked");
 		expect(await submission.wait(context)).toMatchObject({ status: "unanswered", reason: "aborted" });
+		// Integration regression: telemetry must not write before prepareBoundary reads the native head.
+		const observed = (await rawEntries(root)).filter((entry) => entry.kind === "pi.model-observation");
+		expect(observed.map((entry) => entry.data)).toMatchObject([
+			{ phase: "start", attemptNo: 1 },
+			{ phase: "end", attemptNo: 1, status: "aborted", errorClass: "cancelled" },
+		]);
 		const entries = await allEntries(root);
 		expect(entries.map((entry) => entry.kind)).toEqual(["pi.user", "pi.assistant"]);
 		const converted = entries[1]!.model![0] as AssistantMessage;

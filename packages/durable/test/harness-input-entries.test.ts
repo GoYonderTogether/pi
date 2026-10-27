@@ -26,7 +26,14 @@ import {
 } from "@earendil-works/pi-durable";
 import { describe, expect, it } from "vitest";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
-import { allEntries, type ChatSetup, chatSetup, openChat, textOf, waitFor } from "./chat-support.ts";
+import {
+	transcriptEntries as allEntries,
+	type ChatSetup,
+	chatSetup,
+	openChat,
+	textOf,
+	waitFor,
+} from "./chat-support.ts";
 import { addSection, addTool } from "./harness-support.ts";
 import { context } from "./session-support.ts";
 import { aborted, type Deferred, deferred } from "./task-support.ts";
@@ -281,8 +288,11 @@ describe("data-only writes", () => {
 			["pi.assistant"],
 			["chat.message", { author: "bob", text: "lunch?" }],
 		]);
-		await waitFor(() => events.some((event) => event.type === "entry_appended"));
-		const appended = events.find((event) => event.type === "entry_appended");
+		await waitFor(() =>
+			events.some((event) => event.type === "entry_appended" && event.entry.kind === "chat.message"),
+		);
+		// Additive model telemetry also emits entry_appended; this test is about the chat write.
+		const appended = events.find((event) => event.type === "entry_appended" && event.entry.kind === "chat.message");
 		expect(appended).toMatchObject({
 			entry: { kind: "chat.message", id: settled.status === "done" && settled.entry },
 		});
@@ -379,7 +389,9 @@ describe("data-only writes", () => {
 		// The next input places the waiting mention first.
 		const g = await root.submit({ type: "input", content: "g" }, context);
 		await g.wait(context);
-		expect(transcript(await allEntries(root)).filter(([kind]) => kind !== "pi.assistant")).toEqual([
+		expect(
+			transcript(await allEntries(root)).filter(([kind]) => kind !== "pi.assistant" && kind !== "pi.model-attempt"),
+		).toEqual([
 			["pi.user", "a"],
 			["note", "n"],
 			["chat.mention", { author: "ann", text: "f" }, "f"],

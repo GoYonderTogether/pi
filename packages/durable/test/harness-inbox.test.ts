@@ -33,7 +33,14 @@ import {
 import { afterEach, describe, expect, it } from "vitest";
 import { recordUsage } from "../src/harness/usage.ts";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
-import { allEntries, type ChatSetup, chatSetup, openChat, textOf, waitFor } from "./chat-support.ts";
+import {
+	transcriptEntries as allEntries,
+	type ChatSetup,
+	chatSetup,
+	openChat,
+	textOf,
+	waitFor,
+} from "./chat-support.ts";
 import { addHooks, addTool } from "./harness-support.ts";
 import { ControlledStorage, context, documentChanges, flush } from "./session-support.ts";
 import { aborted, type Deferred, deferred } from "./task-support.ts";
@@ -176,15 +183,7 @@ describe("inbox", () => {
 		const first = gated(answer("first"));
 		setup.faux.setResponses([first.step, answer("both")]);
 		const yielded = deferred();
-		addHooks(setup.registry, GenerationTask, { onYield: () => void yielded.resolve() });
 		const storage = new ControlledStorage();
-		const { harness, root } = await openChat(storage, setup);
-		await root.submit({ type: "input", content: "a" }, context);
-		await first.reached;
-		const f1 = await root.submit({ type: "input", content: "f1" }, context);
-		const f2 = await root.submit({ type: "input", content: "f2" }, context);
-		// Occupy the line, let the answer queue its boundary commit behind it, then change the mode.
-		const held = storage.holdCommits();
 		const Marker = defineDoc<{ n: number }>({
 			checkpointWhen: () => false,
 			kind: "test.marker",
@@ -192,13 +191,28 @@ describe("inbox", () => {
 			scope: "session",
 			initial: () => ({ n: 0 }),
 		});
-		const occupying = root.commit(async (tx) => void (await tx.doc(Marker)).n++, context);
-		await held.entered;
+		let held: ReturnType<ControlledStorage["holdCommits"]> | undefined;
+		let occupying: Promise<unknown> | undefined;
+		const { harness, root } = await openChat(storage, setup);
+		// Yonder: the observation end commit precedes onYield, so the line is occupied from the hook, not before the answer.
+		addHooks(setup.registry, GenerationTask, {
+			onYield: () => {
+				if (held !== undefined) return;
+				held = storage.holdCommits();
+				occupying = root.commit(async (tx) => void (await tx.doc(Marker)).n++, context);
+				yielded.resolve();
+			},
+		});
+		await root.submit({ type: "input", content: "a" }, context);
+		await first.reached;
+		const f1 = await root.submit({ type: "input", content: "f1" }, context);
+		const f2 = await root.submit({ type: "input", content: "f2" }, context);
 		first.release();
 		await yielded.promise;
+		await held!.entered;
 		await flush();
 		setup.settings.followUpMode = "all";
-		held.release();
+		held!.release();
 		await occupying;
 		const settled = await f2.wait(context);
 		expect(await status(f1)).toEqual({ ...settled, id: f1.id, entry: expect.any(Number) });
@@ -670,7 +684,7 @@ describe("inbox", () => {
 		await harness.close(context);
 	});
 
-	it("leaves the inbox alone when the run's task is aborted", async () => {
+	it("continues the inbox at the final boundary when the run's task is aborted", async () => {
 		const setup = chatSetup();
 		const first = gated(answer("never"));
 		setup.faux.setResponses([first.step]);
@@ -682,8 +696,8 @@ describe("inbox", () => {
 		await harness.abortTask(taskId, context);
 		expect(await input.wait(context)).toMatchObject({ status: "unanswered", reason: "aborted" });
 		await harness.waitForIdle(context);
-		expect((await status(f)).status).toBe("queued");
-		expect(await inbox(harness, root)).toEqual([[f.id, "followUp"]]);
+		expect(await status(f)).toMatchObject({ status: "unanswered", reason: "model_error" });
+		expect(await inbox(harness, root)).toEqual([]);
 		await harness.close(context);
 	});
 

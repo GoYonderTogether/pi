@@ -1,7 +1,7 @@
 import type { Context, Draft } from "@earendil-works/chord";
 import type { AssistantMessage, Message, ModelThinkingLevel, SimpleStreamOptions } from "@earendil-works/pi-ai";
 import { calculateContextTokens, estimateMessageTokens } from "@earendil-works/pi-ai/utils/estimate";
-import { isRetryableAssistantError, retryDelayMs } from "@earendil-works/pi-ai/utils/retry";
+import { isRetryableAssistantError } from "@earendil-works/pi-ai/utils/retry";
 import { CompactionEntry } from "../entries.ts";
 import { defineTask } from "../tasks.ts";
 import type {
@@ -10,6 +10,7 @@ import type {
 	EntryId,
 	NextTaskState,
 	RunningTask,
+	SubmissionId,
 	TaskId,
 	TaskRuntime,
 	Tx,
@@ -23,6 +24,8 @@ import {
 	type LiveState,
 	removeCompactionStatus,
 } from "./live.ts";
+import { abortModelObservation, type ObservationCheckpoint, observeModelAttempt } from "./model-observation.ts";
+import { modelRecovery } from "./model-recovery.ts";
 import { ensureProviderSessionId } from "./provider.ts";
 import { admitSubmission } from "./submissions.ts";
 import type {
@@ -37,12 +40,15 @@ import type {
 } from "./types.ts";
 import { recordUsage } from "./usage.ts";
 
-export type CompactionInput = { reason: CompactionReason; instructions?: string };
+export type CompactionInput = { reason: CompactionReason; instructions?: string; modelRun?: SubmissionId };
 
 /** The pinned summarization request. */
-export type SummaryRequest = {
+export type SummaryRequest = ObservationCheckpoint & {
 	attempt: number;
+	/** Total attempts across models, for the same backoff as generation. Older checkpoints use attempt. */
+	totalAttempt?: number;
 	model: ModelRef;
+	fallback?: { models: ModelRef[]; after: number };
 	thinkingLevel: ModelThinkingLevel;
 	streamOptions: ConversationStreamOptions;
 	maxTokens: number;
@@ -52,10 +58,12 @@ export type SummaryRequest = {
 	firstKept: EntryId;
 };
 
-export type CompactionCheckpoint =
-	| { phase: "select" }
-	| ({ phase: "summarize" } & SummaryRequest)
-	| ({ phase: "retry"; until: number } & SummaryRequest);
+export type CompactionCheckpoint = ObservationCheckpoint &
+	(
+		| { phase: "select" }
+		| ({ phase: "summarize" } & SummaryRequest)
+		| ({ phase: "retry"; until: number } & SummaryRequest)
+	);
 
 type Runtime = TaskRuntime<CompactionInput, CompactionCheckpoint, CompactionResult, CompactionHooks>;
 type Next = NextTaskState<CompactionCheckpoint, CompactionResult>;
@@ -143,6 +151,7 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 			const request: SummaryRequest = {
 				attempt: 1,
 				model: ref,
+				...(agent.modelFallbacks?.models.length ? { fallback: agent.modelFallbacks } : {}),
 				thinkingLevel: agent.thinkingLevel,
 				streamOptions: settings.stream,
 				maxTokens: Math.min(
@@ -172,8 +181,10 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 				},
 			];
 			const { deferred: _deferred, ...forwarded } = streamOptions;
+			const fallback = request.fallback;
 			const options: SimpleStreamOptions = {
 				...forwarded,
+				maxRetries: 0,
 				cacheRetention: "none",
 				maxTokens,
 				signal: runtime.signal,
@@ -181,17 +192,31 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 				sessionId: await ensureProviderSessionId(runtime, context),
 				...(thinkingLevel === "off" ? {} : { reasoning: thinkingLevel }),
 			};
-			const message = await runtime.models.completeSimple(model, { messages }, options);
+			const message = await observeModelAttempt(
+				runtime,
+				"compaction",
+				model,
+				thinkingLevel,
+				() => runtime.models.completeSimple(model, { messages }, options),
+				context,
+			);
 			// An abort mark or close: the abort invocation or the reopened task handles the committed state.
 			runtime.signal.throwIfAborted();
 			const summary = summaryText(message);
 			const policy = runtime.settings.retry;
-			const retry =
-				message.stopReason === "error" &&
-				isRetryableAssistantError(message) &&
-				policy.enabled &&
-				attempt <= policy.maxRetries;
-			const until = retry ? runtime.now() + retryDelayMs(policy, attempt) : 0;
+			const index =
+				fallback?.models.findIndex((model) => model.provider === ref.provider && model.modelId === ref.modelId) ??
+				-1;
+			const nextModel = fallback?.models[index + 1];
+			let retryable = isRetryableAssistantError(message);
+			await runtime.hooks.each("shouldRetry", async (hook) => {
+				const value = await hook(message, runtime, context);
+				if (value !== undefined) retryable = value;
+			});
+			const totalAttempt = request.totalAttempt ?? attempt;
+			const decision = modelRecovery(message, policy, totalAttempt, retryable, fallback, index + 1, attempt);
+			const { retry, advance } = decision;
+			const until = retry ? runtime.now() + decision.delay : 0;
 			await runtime.commit(async (tx, current): Promise<Next> => {
 				await recordUsage(
 					tx,
@@ -202,13 +227,44 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 				);
 				const live = await tx.doc(LiveDoc, runtime.conversationId);
 				if (summary !== undefined) return placeSummary(tx, runtime, current, live, firstKept, summary);
+				await tx.appendEntry(runtime.conversationId, {
+					kind: "pi.model-attempt",
+					data: {
+						task: runtime.taskId,
+						operation: "compaction",
+						model: ref,
+						attempt,
+						failures: attempt,
+						error: message.stopReason === "error" ? decision.error : summaryFailure(message),
+						action: advance ? "fallback" : retry ? "retry" : "stop",
+						...(advance ? { nextModel: nextModel! } : {}),
+						...(retry ? { retryAt: until } : {}),
+					},
+				});
 				if (retry) {
 					const status = compactionStatus(live, runtime.taskId);
 					if (status !== undefined) status.retry = { at: until, error: message.errorMessage ?? "" };
-					const checkpoint = { phase: "retry", ...request, until } as const;
+					if (advance && current.owner !== undefined && live.run)
+						live.run.modelFallback = { index: index + 2, failures: 0 };
+					const { observationStart: _start, ...pinned } = request;
+					const observed = { ...pinned, observationAttemptNo: current.state.checkpoint.observationAttemptNo! };
+					const next =
+						advance && nextModel !== undefined
+							? {
+									...observed,
+									model: nextModel,
+									attempt: 0,
+									maxTokens: Math.min(
+										maxTokens,
+										runtime.models.getModel(nextModel.provider, nextModel.modelId)?.maxTokens || maxTokens,
+									),
+								}
+							: observed;
+					const checkpoint = { phase: "retry", ...next, totalAttempt, until } as const;
 					return { status: "sleeping", checkpoint, until };
 				}
-				const text = summaryFailure(message);
+				const text =
+					message.stopReason === "error" ? `Summarization failed: ${decision.error}` : summaryFailure(message);
 				failCompactionStatus(live, runtime.taskId, text);
 				return {
 					status: "terminal",
@@ -227,12 +283,22 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 					status.attempt = attempt;
 					delete status.retry;
 				}
-				return { status: "running", checkpoint: { phase: "summarize", ...request, attempt } };
+				return {
+					status: "running",
+					checkpoint: {
+						phase: "summarize",
+						...request,
+						attempt,
+						totalAttempt: (request.totalAttempt ?? request.attempt) + 1,
+					},
+				};
 			}, context);
 		},
 	},
-	abort: async (_task, runtime, context) => {
+	abort: async (task, runtime, context) => {
 		await runtime.commit(async (tx) => {
+			if (task.state.checkpoint.phase !== "select")
+				await abortModelObservation(tx, runtime.conversationId, task.state.checkpoint, runtime.now());
 			removeCompactionStatus(await tx.doc(LiveDoc, runtime.conversationId), runtime.taskId);
 			return { status: "terminal", outcome: { status: "aborted" } };
 		}, context);
@@ -252,7 +318,12 @@ export async function createCompaction(
 	const ownership =
 		owner === undefined ? ({ kind: "conversation" } as const) : { kind: "task" as const, taskId: owner };
 	const background = owner === undefined && input.reason !== "manual";
-	const taskId = await tx.createTask(CompactionTask, input, { ownership, conversationId, background });
+	const modelRun = (await tx.doc(LiveDoc, conversationId)).run?.inputs[0];
+	const taskId = await tx.createTask(
+		CompactionTask,
+		{ ...input, ...(modelRun === undefined ? {} : { modelRun }) },
+		{ ownership, conversationId, background },
+	);
 	const status = { taskId, reason: input.reason, blocking: owner !== undefined, attempt: 1 };
 	addCompactionStatus(await tx.doc(LiveDoc, conversationId), status);
 	return taskId;
@@ -262,11 +333,14 @@ export async function createCompaction(
 export function compactionPolicy(settings: Settings, model: ModelRef): CompactionPolicy {
 	const { modelOverrides, ...policy } = settings.compaction;
 	const override = modelOverrides?.[`${model.provider}/${model.modelId}`];
+	const backgroundAtTokens = override?.backgroundAtTokens ?? policy.backgroundAtTokens;
 	return {
 		enabled: override?.enabled ?? policy.enabled,
 		reserveTokens: override?.reserveTokens ?? policy.reserveTokens,
 		keepRecentTokens: override?.keepRecentTokens ?? policy.keepRecentTokens,
 		backgroundTokens: override?.backgroundTokens ?? policy.backgroundTokens,
+		// Yonder fork: absolute background trigger survives the per-model merge.
+		...(backgroundAtTokens === undefined ? {} : { backgroundAtTokens }),
 	};
 }
 

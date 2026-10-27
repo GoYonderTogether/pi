@@ -42,6 +42,13 @@ import { AssistantMessageEventStream } from "../utils/event-stream.ts";
 import { headersToRecord } from "../utils/headers.ts";
 import { type ClientIdentity, getIdentityHeaders } from "../utils/identity.ts";
 import { parseJsonWithRepair, parseStreamingJson, parseToolCallArguments } from "../utils/json-parse.ts";
+import {
+	createAssistantMessageObservation,
+	observationModelLabel,
+	observeAnthropicUsage,
+	observeRequestEffort,
+	type RequestedEffortObservation,
+} from "../utils/observation.ts";
 import { getProviderEnvValue } from "../utils/provider-env.ts";
 import { retryProviderRequest } from "../utils/provider-retry.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
@@ -568,10 +575,11 @@ async function* iterateAnthropicEvents(
 	}
 }
 
-export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
+const streamWithEffort = (
 	model: Model<"anthropic-messages">,
 	context: TranscriptContext,
 	options?: AnthropicOptions,
+	effort?: RequestedEffortObservation,
 ): AssistantMessageEventStream => {
 	const stream = new AssistantMessageEventStream();
 	const normalizedContext = resolveTranscript(context, getAnthropicCompat(model).supportsMidConvoSystemMessages);
@@ -579,6 +587,7 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 
 	(async () => {
 		const output: AssistantMessage = {
+			observation: createAssistantMessageObservation(true, effort),
 			role: "assistant",
 			content: [],
 			api: model.api as Api,
@@ -651,6 +660,7 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 				if (nextParams !== undefined) {
 					params = { ...(nextParams as MessageCreateParamsStreaming), stream: true };
 				}
+				observeRequestEffort(output.observation!, params, effort);
 				try {
 					response = await retryProviderRequest(
 						() => client.beta.messages.create(params, requestOptions).asResponse(),
@@ -700,6 +710,9 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 					const transformations = event.message.input_transformations;
 					if (Array.isArray(transformations)) inputTransformations = transformations;
 					const responseModel = event.message.model;
+					if (typeof responseModel === "string" && responseModel.length > 0)
+						output.observation!.reportedResponseModel = observationModelLabel(responseModel);
+					observeAnthropicUsage(output.observation!, event.message.usage);
 					if (responseModel !== model.id) output.responseModel = responseModel;
 					const fallbackCost =
 						responseModel === model.id
@@ -859,6 +872,7 @@ export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = (
 					// Only update usage fields if present (not null).
 					// Preserves input_tokens from message_start when proxies omit it in message_delta.
 					if (event.usage) {
+						observeAnthropicUsage(output.observation!, event.usage);
 						if (event.usage.input_tokens != null) {
 							output.usage.input = event.usage.input_tokens;
 						}
@@ -958,6 +972,8 @@ function mapThinkingLevelToEffort(
 	}
 }
 
+export const stream: StreamFunction<"anthropic-messages", AnthropicOptions> = streamWithEffort;
+
 export const streamSimple: StreamFunction<"anthropic-messages", SimpleStreamOptions> = (
 	model: Model<"anthropic-messages">,
 	context: TranscriptContext,
@@ -972,21 +988,31 @@ export const streamSimple: StreamFunction<"anthropic-messages", SimpleStreamOpti
 		toolChoice: options?.toolChoice,
 	} satisfies AnthropicOptions;
 	if (!options?.reasoning) {
-		return stream(model, context, {
-			...base,
-			thinkingEnabled: false,
-		} satisfies AnthropicOptions);
+		return streamWithEffort(
+			model,
+			context,
+			{
+				...base,
+				thinkingEnabled: false,
+			} satisfies AnthropicOptions,
+			{ requested: null, clamped: null },
+		);
 	}
 
 	// For models with adaptive thinking: use an effort level.
 	// For older models: use budget-based thinking.
 	if (model.compat?.forceAdaptiveThinking === true) {
 		const effort = mapThinkingLevelToEffort(model, options.reasoning);
-		return stream(model, context, {
-			...base,
-			thinkingEnabled: true,
-			effort,
-		} satisfies AnthropicOptions);
+		return streamWithEffort(
+			model,
+			context,
+			{
+				...base,
+				thinkingEnabled: true,
+				effort,
+			} satisfies AnthropicOptions,
+			{ requested: options.reasoning, clamped: options.reasoning },
+		);
 	}
 
 	// Undefined means the caller did not request an output cap; let the helper use the model cap.
@@ -1000,12 +1026,20 @@ export const streamSimple: StreamFunction<"anthropic-messages", SimpleStreamOpti
 
 	const maxTokens = clampMaxTokensToContext(model, context, adjusted.maxTokens);
 
-	return stream(model, context, {
-		...base,
-		maxTokens,
-		thinkingEnabled: true,
-		thinkingBudgetTokens: Math.min(adjusted.thinkingBudget, Math.max(0, maxTokens - 1024)),
-	} satisfies AnthropicOptions);
+	return streamWithEffort(
+		model,
+		context,
+		{
+			...base,
+			maxTokens,
+			thinkingEnabled: true,
+			thinkingBudgetTokens: Math.min(adjusted.thinkingBudget, Math.max(0, maxTokens - 1024)),
+		} satisfies AnthropicOptions,
+		{
+			requested: options.reasoning,
+			clamped: options.reasoning === "xhigh" || options.reasoning === "max" ? "high" : options.reasoning,
+		},
+	);
 };
 
 function isOAuthToken(apiKey: string): boolean {

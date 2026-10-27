@@ -35,7 +35,7 @@ import {
 import { describe, expect, it } from "vitest";
 import { NodeExecutionEnv } from "../src/env/node.ts";
 import { createBashTool, createEditTool, createReadTool } from "../src/tools/index.ts";
-import { allEntries, type ChatSetup, chatSetup, openChat, textOf } from "./chat-support.ts";
+import { transcriptEntries as allEntries, type ChatSetup, chatSetup, openChat, textOf } from "./chat-support.ts";
 import { addHooks, addTask, addTool, type Installed } from "./harness-support.ts";
 import { context } from "./session-support.ts";
 import { aborted, deferred } from "./task-support.ts";

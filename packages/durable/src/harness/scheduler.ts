@@ -198,8 +198,12 @@ export type TaskSchedulerOptions = {
 	readonly session: SessionImpl;
 	readonly storage: Storage;
 	readonly registry: RegistryReader;
-	/** The host's current model access (`HarnessOptions.models`); read at each access. */
 	readonly models: () => Models;
+	readonly resolveModels?: (
+		conversationId: ConversationId,
+		taskId: TaskId,
+		context: Context,
+	) => Models | Promise<Models>;
 	/** Resolve a conversation's agent against a snapshot; the runtime calls it at most once per phase. */
 	readonly agent: (conversationId: ConversationId, snapshot: RegistrySnapshot, context: Context) => Promise<Agent>;
 	/** Resolve the settings; read at each access. */
@@ -259,6 +263,7 @@ export class TaskScheduler {
 	readonly #storage: Storage;
 	readonly #registry: RegistryReader;
 	readonly #models: () => Models;
+	readonly #resolveModels: TaskSchedulerOptions["resolveModels"];
 	readonly #agent: TaskSchedulerOptions["agent"];
 	readonly #settings: TaskSchedulerOptions["settings"];
 	readonly #env: TaskSchedulerOptions["env"];
@@ -353,6 +358,7 @@ export class TaskScheduler {
 		this.#storage = options.storage;
 		this.#registry = options.registry;
 		this.#models = options.models;
+		this.#resolveModels = options.resolveModels;
 		this.#agent = options.agent;
 		this.#settings = options.settings;
 		this.#env = options.env;
@@ -1712,7 +1718,7 @@ export class TaskScheduler {
 		const invocation = reservation.invocation;
 		const state = { task: reservation.task, snapshot: reservation.snapshot, reported: undefined as ReportedTask };
 		const phase: Phase = { snapshot: () => state.snapshot, task: () => state.task, agent: undefined };
-		const runtime = this.#runtime(invocation, phase);
+		let runtime: ErasedRuntime | undefined;
 		let current = await this.#step(invocation, (tx, next) =>
 			this.#decide(tx, next, undefined, state, invocation.extension, invocation.context),
 		);
@@ -1720,10 +1726,10 @@ export class TaskScheduler {
 			const task = current;
 			current = await this.#phase(invocation, task, async () => {
 				const checkpoint = task.state.checkpoint;
-				// Each phase handler resolves its agent afresh, at first use.
 				phase.agent = undefined;
 				let previous: PhaseResult;
 				try {
+					runtime ??= await this.#runtime(invocation, phase);
 					await erased(state.task).phases[checkpoint.phase]!(task, runtime, invocation.context);
 					previous = { checkpoint };
 				} catch (error) {
@@ -1867,7 +1873,7 @@ export class TaskScheduler {
 					task: () => reservation.task,
 					agent: undefined,
 				};
-				const runtime = this.#runtime(invocation, phase);
+				const runtime = await this.#runtime(invocation, phase);
 				await erased(reservation.task).abort(current, runtime, invocation.context);
 			} catch (error) {
 				failure = { error };
@@ -2082,7 +2088,7 @@ export class TaskScheduler {
 
 	// ─── Invocation runtime ──────────────────────────────────────────────────
 
-	#runtime(invocation: Invocation, phase: Phase): ErasedRuntime {
+	async #runtime(invocation: Invocation, phase: Phase): Promise<ErasedRuntime> {
 		// Resolved at most once per phase handler, at first use, with the invocation's context; fixed for the phase.
 		const agent = (): Promise<Agent> => {
 			if (invocation.ended) return Promise.reject(endedError(invocation));
@@ -2093,6 +2099,16 @@ export class TaskScheduler {
 			}
 			return phase.agent;
 		};
+		// A synchronous runtime.models is safe only after application preparation has frozen this run's config.
+		// Keep the result on this runtime, not on the scheduler or phase: later phases may prepare agents afresh.
+		let models = this.#models;
+		if (this.#resolveModels !== undefined) {
+			await agent();
+			const resolved = await this.#resolveModels(invocation.conversationId, invocation.taskId, invocation.context);
+			models = () => resolved;
+			if (invocation.ended) throw endedError(invocation);
+			invocation.context.abortSignal?.throwIfAborted();
+		}
 		const hooks: HookRunner<Record<string, unknown>> = {
 			each: async (name, invoke) => {
 				for (const { extension, handlers } of agentHooks(await agent(), phase.task().definition.name)) {
@@ -2112,7 +2128,6 @@ export class TaskScheduler {
 			},
 		};
 		const settings = this.#settings;
-		const models = this.#models;
 		return {
 			taskId: invocation.taskId as TaskId<JsonValue>,
 			conversationId: invocation.conversationId,

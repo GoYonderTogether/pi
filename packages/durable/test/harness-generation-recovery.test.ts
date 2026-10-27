@@ -6,7 +6,15 @@ import { type AssistantMessage, createModels, fauxAssistantMessage, type Message
 import { AssistantEntry, type Harness, LiveDoc, type TaskId } from "@earendil-works/pi-durable";
 import { afterEach, describe, expect, it } from "vitest";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
-import { allEntries, type ChatSetup, chatSetup, openChat, textOf, unanswered, waitFor } from "./chat-support.ts";
+import {
+	transcriptEntries as allEntries,
+	type ChatSetup,
+	chatSetup,
+	openChat,
+	textOf,
+	unanswered,
+	waitFor,
+} from "./chat-support.ts";
 import { addSection } from "./harness-support.ts";
 import { context } from "./session-support.ts";
 import { aborted, deferred, eventually } from "./task-support.ts";
@@ -185,7 +193,7 @@ describe("generation recovery", () => {
 		opened = await open(path, setup);
 		expect((await opened.harness.getTask(taskId, context))?.state).toEqual({
 			status: "sleeping",
-			checkpoint: { phase: "retry", attempt: 1, until: 61_000 },
+			checkpoint: { phase: "retry", attempt: 1, until: 61_000, observationAttemptNo: 1 },
 			until: 61_000,
 		});
 		await eventually(() => !opened.harness.wake().active);
@@ -204,6 +212,7 @@ describe("generation recovery", () => {
 		expect((await allEntries(opened.root)).map((entry) => entry.kind)).toEqual([
 			"pi.user",
 			"pi.assistant",
+			"pi.model-attempt",
 			"pi.assistant",
 		]);
 		await opened.harness.close(context);

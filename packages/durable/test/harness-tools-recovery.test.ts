@@ -26,7 +26,7 @@ import type { ExecutionEnv } from "../src/env/index.ts";
 import { NodeExecutionEnv } from "../src/env/node.ts";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
 import { createBashTool } from "../src/tools/index.ts";
-import { allEntries, type ChatSetup, chatSetup, openChat, waitFor } from "./chat-support.ts";
+import { transcriptEntries as allEntries, type ChatSetup, chatSetup, openChat, waitFor } from "./chat-support.ts";
 import { addHooks, addTool, type Installed } from "./harness-support.ts";
 import { context } from "./session-support.ts";
 import { aborted, deferred } from "./task-support.ts";

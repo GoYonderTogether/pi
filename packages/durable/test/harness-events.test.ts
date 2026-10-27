@@ -120,7 +120,10 @@ describe("agent events", () => {
 		const submission = await root.submit({ type: "input", content: "hi" }, context);
 		await submission.wait(context);
 		await drained();
-		const all = events();
+		// Yonder: additive pi.model-observation entries also surface as entry_appended; this test pins the lifecycle.
+		const all = events().filter(
+			(event) => !(event.type === "entry_appended" && event.entry.kind === "pi.model-observation"),
+		);
 		const types = all.map((event) => event.type).filter((type, index, list) => type !== list[index - 1]);
 		expect(types).toEqual([
 			"message_start",

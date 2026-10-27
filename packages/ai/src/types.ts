@@ -479,6 +479,61 @@ export interface Usage {
 	};
 }
 
+/** A provider count, kept separate from legacy Usage's numeric defaults. */
+export interface ObservedUsageValue {
+	value: number | null;
+	source: "reported" | "derived" | "unknown";
+}
+
+/** Client observations only; delta counts count nonempty chunks, not tokens. */
+export interface AssistantMessageObservation {
+	version: 1;
+	/** Monotonic client milliseconds relative to stream creation. */
+	timing: {
+		firstNormalizedEventMs: number | null;
+		firstTextDeltaMs: number | null;
+		lastTextDeltaMs: number | null;
+		firstThinkingDeltaMs: number | null;
+		lastThinkingDeltaMs: number | null;
+		firstToolDeltaMs: number | null;
+		lastToolDeltaMs: number | null;
+		firstEffectiveDeltaMs: number | null;
+		lastEffectiveDeltaMs: number | null;
+		endMs: number | null;
+		textDeltaCount: number;
+		thinkingDeltaCount: number;
+		toolDeltaCount: number;
+	};
+	usage: Record<
+		"input" | "output" | "cacheRead" | "cacheWrite" | "cacheWrite1h" | "reasoning" | "totalTokens",
+		ObservedUsageValue
+	> & {
+		support: "supported" | "unsupported";
+	};
+	effort: {
+		support: "supported" | "unsupported";
+		/** Pi levels from streamSimple; null for direct provider-specific requests. */
+		requested: string | null;
+		clamped: string | null;
+		wire: { effort: string | number | null; mode: string | null; budgetTokens: number | null };
+		serverActual: null;
+	};
+	reportedResponseModel: string | null;
+	responseHeadersMs: null;
+	firstProviderEventMs: null;
+	firstBodyByteMs: null;
+	accountSlotId: null;
+	rateSnapshot: null;
+	unsupported: (
+		| "responseHeadersMs"
+		| "firstProviderEventMs"
+		| "firstBodyByteMs"
+		| "serverActualEffort"
+		| "accountSlotId"
+		| "rateSnapshot"
+	)[];
+}
+
 export type StopReason = "pending" | "stop" | "length" | "toolUse" | "error" | "aborted" | "deferred";
 
 export type JsonValue = null | boolean | number | string | readonly JsonValue[] | JsonObject;
@@ -606,6 +661,8 @@ export interface AssistantMessage {
 	 * for deferred results fetched later.
 	 */
 	durationMs?: number;
+	/** Optional versioned client timing, usage provenance, and request effort snapshot. */
+	observation?: AssistantMessageObservation;
 }
 
 /** A tool call that another tool made while it ran, for example from a codemode script. */

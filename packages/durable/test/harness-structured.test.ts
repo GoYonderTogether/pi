@@ -36,7 +36,7 @@ import {
 } from "@earendil-works/pi-durable";
 import { afterEach, describe, expect, it } from "vitest";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
-import { allEntries, chatSetup, openChat, waitFor } from "./chat-support.ts";
+import { transcriptEntries as allEntries, chatSetup, openChat, waitFor } from "./chat-support.ts";
 import { addHooks, addTask, addTool } from "./harness-support.ts";
 import { ControlledStorage, context } from "./session-support.ts";
 import { aborted, type Deferred, deferred, openTasks, settled } from "./task-support.ts";

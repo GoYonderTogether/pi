@@ -41,6 +41,13 @@ import { shortHash } from "../utils/hash.ts";
 import { headersToRecord } from "../utils/headers.ts";
 import { type ClientIdentity, getIdentityHeaders } from "../utils/identity.ts";
 import { parseStreamingJson, parseToolCallArguments } from "../utils/json-parse.ts";
+import {
+	createAssistantMessageObservation,
+	observationModelLabel,
+	observeOpenAIUsage,
+	observeRequestEffort,
+	type RequestedEffortObservation,
+} from "../utils/observation.ts";
 import { getProviderEnvValue } from "../utils/provider-env.ts";
 import { retryProviderRequest } from "../utils/provider-retry.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
@@ -301,16 +308,18 @@ function resolveCacheRetention(cacheRetention?: CacheRetention, env?: ProviderEn
 	return "short";
 }
 
-export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptions> = (
+const streamWithEffort = (
 	model: Model<"openai-completions">,
 	context: TranscriptContext,
 	options?: OpenAICompletionsOptions,
+	effort?: RequestedEffortObservation,
 ): AssistantMessageEventStream => {
 	const stream = new AssistantMessageEventStream();
 	const normalizedContext = resolveTranscript(context, getCompat(model).supportsMidConvoSystemMessages);
 
 	(async () => {
 		const output: AssistantMessage = {
+			observation: createAssistantMessageObservation(true, effort),
 			role: "assistant",
 			content: [],
 			api: model.api,
@@ -368,6 +377,7 @@ export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptio
 			if (nextParams !== undefined) {
 				params = nextParams as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming;
 			}
+			observeRequestEffort(output.observation!, params, effort, resolveThinkingTokenBudgetField(compat));
 			const requestOptions = {
 				...(options?.signal ? { signal: options.signal } : {}),
 				...(options?.timeoutMs !== undefined ? { timeout: options.timeoutMs } : {}),
@@ -563,10 +573,13 @@ export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptio
 				// OpenAI documents ChatCompletionChunk.id as the unique chat completion identifier,
 				// and each chunk in a streamed completion carries the same id.
 				output.responseId ||= chunk.id;
+				if (typeof chunk.model === "string" && chunk.model.length > 0)
+					output.observation!.reportedResponseModel = observationModelLabel(chunk.model);
 				if (typeof chunk.model === "string" && chunk.model.length > 0 && chunk.model !== model.id) {
 					output.responseModel ||= chunk.model;
 				}
 				if (chunk.usage) {
+					observeOpenAIUsage(output.observation!, chunk.usage, false);
 					output.usage = parseChunkUsage(chunk.usage, model);
 				}
 
@@ -576,6 +589,7 @@ export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptio
 				// Fallback: some providers (e.g., Moonshot) return usage
 				// in choice.usage instead of the standard chunk.usage
 				if (!chunk.usage && (choice as any).usage) {
+					observeOpenAIUsage(output.observation!, (choice as { usage?: unknown }).usage, false);
 					output.usage = parseChunkUsage((choice as any).usage, model);
 				}
 
@@ -736,6 +750,8 @@ export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptio
 	return stream;
 };
 
+export const stream: StreamFunction<"openai-completions", OpenAICompletionsOptions> = streamWithEffort;
+
 export const streamSimple: StreamFunction<"openai-completions", SimpleStreamOptions> = (
 	model: Model<"openai-completions">,
 	context: TranscriptContext,
@@ -750,11 +766,16 @@ export const streamSimple: StreamFunction<"openai-completions", SimpleStreamOpti
 	const clampedReasoning = options?.reasoning ? clampThinkingLevel(model, options.reasoning) : undefined;
 	const reasoningEffort = clampedReasoning === "off" ? undefined : clampedReasoning;
 
-	return stream(model, context, {
-		...base,
-		reasoningEffort,
-		thinkingBudgets: options?.thinkingBudgets,
-	} satisfies OpenAICompletionsOptions);
+	return streamWithEffort(
+		model,
+		context,
+		{
+			...base,
+			reasoningEffort,
+			thinkingBudgets: options?.thinkingBudgets,
+		} satisfies OpenAICompletionsOptions,
+		{ requested: options?.reasoning ?? null, clamped: clampedReasoning ?? null },
+	);
 };
 
 function createClient(

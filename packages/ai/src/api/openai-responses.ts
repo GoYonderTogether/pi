@@ -19,6 +19,11 @@ import { formatProviderError, normalizeProviderError } from "../utils/error-body
 import { AssistantMessageEventStream } from "../utils/event-stream.ts";
 import { headersToRecord } from "../utils/headers.ts";
 import { type ClientIdentity, getIdentityHeaders } from "../utils/identity.ts";
+import {
+	createAssistantMessageObservation,
+	observeRequestEffort,
+	type RequestedEffortObservation,
+} from "../utils/observation.ts";
 import { getProviderEnvValue } from "../utils/provider-env.ts";
 import { retryProviderRequest } from "../utils/provider-retry.ts";
 import { getDeclaredTools, resolveTranscript, resolveTranscriptTools } from "../utils/transcript.ts";
@@ -151,10 +156,11 @@ export interface OpenAIResponsesOptions extends StreamOptions {
 /**
  * Generate function for OpenAI Responses API
  */
-export const stream: StreamFunction<"openai-responses", OpenAIResponsesOptions> = (
+const streamWithEffort = (
 	model: Model<"openai-responses">,
 	context: TranscriptContext,
 	options?: OpenAIResponsesOptions,
+	effort?: RequestedEffortObservation,
 ): AssistantMessageEventStream => {
 	const stream = new AssistantMessageEventStream();
 	const normalizedContext = resolveTranscript(context, getCompat(model).supportsMidConvoSystemMessages);
@@ -164,6 +170,7 @@ export const stream: StreamFunction<"openai-responses", OpenAIResponsesOptions> 
 		const compat = getCompat(model);
 		const configurationUpdateEffort = getConfigurationUpdateEffort(model, options, compat);
 		const output: AssistantMessage = {
+			observation: createAssistantMessageObservation(true, effort),
 			role: "assistant",
 			content: [],
 			api: model.api as Api,
@@ -212,6 +219,7 @@ export const stream: StreamFunction<"openai-responses", OpenAIResponsesOptions> 
 			if (nextParams !== undefined) {
 				params = nextParams as ResponseCreateParamsStreaming;
 			}
+			observeRequestEffort(output.observation!, params, effort);
 			const requestOptions = {
 				...(options?.signal ? { signal: options.signal } : {}),
 				...(options?.timeoutMs !== undefined ? { timeout: options.timeoutMs } : {}),
@@ -277,6 +285,8 @@ export const stream: StreamFunction<"openai-responses", OpenAIResponsesOptions> 
 	return stream;
 };
 
+export const stream: StreamFunction<"openai-responses", OpenAIResponsesOptions> = streamWithEffort;
+
 export const streamSimple: StreamFunction<"openai-responses", SimpleStreamOptions> = (
 	model: Model<"openai-responses">,
 	context: TranscriptContext,
@@ -291,10 +301,15 @@ export const streamSimple: StreamFunction<"openai-responses", SimpleStreamOption
 	const clampedReasoning = options?.reasoning ? clampThinkingLevel(model, options.reasoning) : undefined;
 	const reasoningEffort = clampedReasoning === "off" ? undefined : clampedReasoning;
 
-	return stream(model, context, {
-		...base,
-		reasoningEffort,
-	} satisfies OpenAIResponsesOptions);
+	return streamWithEffort(
+		model,
+		context,
+		{
+			...base,
+			reasoningEffort,
+		} satisfies OpenAIResponsesOptions,
+		{ requested: options?.reasoning ?? null, clamped: clampedReasoning ?? null },
+	);
 };
 
 function createClient(

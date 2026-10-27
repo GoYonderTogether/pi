@@ -25,6 +25,7 @@ import {
 	type Harness,
 	LiveDoc,
 	MemoryStorage,
+	ModelObservationEntry,
 	ProviderDoc,
 	type TaskId,
 	UsageDoc,
@@ -34,7 +35,16 @@ import { afterEach, describe, expect, it } from "vitest";
 import { selectCut, serializeConversation } from "../src/harness/compaction.ts";
 import { orderToolResults } from "../src/harness/context.ts";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
-import { allEntries, type ChatSetup, chatSetup, openChat, textOf, toolsNamed, waitFor } from "./chat-support.ts";
+import {
+	transcriptEntries as allEntries,
+	type ChatSetup,
+	chatSetup,
+	openChat,
+	allEntries as rawEntries,
+	textOf,
+	toolsNamed,
+	waitFor,
+} from "./chat-support.ts";
 import { addHooks, addSection, addTask, addTool } from "./harness-support.ts";
 import { ControlledStorage, context } from "./session-support.ts";
 import { aborted, type Deferred, deferred } from "./task-support.ts";
@@ -687,7 +697,7 @@ describe("manual compaction", () => {
 		expect((await live(chat)).compactions).toBeUndefined();
 		expect((await kinds(chat.root)).includes("pi.compaction")).toBe(false);
 
-		// Queued while busy, then Esc: the queued write stays and lands with the next run's boundary.
+		// Yonder fork: Esc places the already queued summary at its native final boundary.
 		const gate = deferred();
 		const busy = deferred();
 		chat.faux.agent.push(gated(gate, answer("never"), busy));
@@ -698,11 +708,11 @@ describe("manual compaction", () => {
 		await chat.root.abort(context);
 		const submissionId = queued.status === "completed" ? queued.result.submissionId! : undefined;
 		const submission = (await chat.harness.submission(submissionId!, context))!;
-		expect((await submission.status(context)).status).toBe("queued");
-		expect(await submission.abort(context)).toBe("aborted");
+		expect((await submission.status(context)).status).toBe("done");
+		expect(await submission.abort(context)).toBe("settled");
 		await turn(chat, "next", "ok");
-		expect(await submission.status(context)).toMatchObject({ status: "unanswered", reason: "aborted" });
-		expect((await kinds(chat.root)).includes("pi.compaction")).toBe(false);
+		expect(await submission.status(context)).toMatchObject({ status: "done" });
+		expect((await kinds(chat.root)).includes("pi.compaction")).toBe(true);
 		await chat.harness.close(context);
 	});
 
@@ -776,13 +786,9 @@ describe("compaction outcomes", () => {
 		expect(chat.setup.reports).toEqual([expect.objectContaining({ message: "hook broke" })]);
 		const compaction = seen[0] as { entries: EntryRecord[]; messages: Message[]; firstKept: number };
 		expect(compaction).toMatchObject({ reason: "manual", instructions: "why" });
-		expect(compaction.entries.map((record) => record.kind)).toEqual([
-			"pi.user",
-			"pi.system",
-			"pi.assistant",
-			"pi.user",
-			"pi.assistant",
-		]);
+		expect(
+			compaction.entries.filter((record) => record.kind !== "pi.model-observation").map((record) => record.kind),
+		).toEqual(["pi.user", "pi.system", "pi.assistant", "pi.user", "pi.assistant"]);
 		expect(compaction.messages.filter((message) => message.role !== "system").map(userText)).toEqual([
 			text("u1", 100),
 			text("a1", 100),
@@ -850,6 +856,19 @@ describe("compaction outcomes", () => {
 		});
 		expect(chat.faux.summaryRequests).toHaveLength(2);
 		expect(twice).toBe(2 * once);
+		const observations = (await rawEntries(chat.root))
+			.filter(ModelObservationEntry.is)
+			.map((entry) => entry.data!)
+			.filter((data) => data.operation === "compaction");
+		expect(observations.map((data) => [data.phase, data.attemptNo])).toEqual([
+			["start", 1],
+			["end", 1],
+			["start", 2],
+			["end", 2],
+		]);
+		expect(observations[0]!.attemptId).not.toBe(observations[2]!.attemptId);
+		expect(observations[1]!.status).toBe("error");
+		expect(observations[3]!.status).toBe("stop");
 		const sessionId = (await chat.harness.snapshot(ProviderDoc, chat.root.id, context))!.sessionId;
 		for (const request of chat.faux.summaryRequests) {
 			expect(request.options).toMatchObject({
@@ -902,7 +921,11 @@ describe("compaction outcomes", () => {
 	});
 
 	for (const [name, response, message] of [
-		["retries run out", failure("overloaded"), "Summarization failed: overloaded"],
+		[
+			"retries run out",
+			failure("overloaded"),
+			"Summarization failed: Model retries exhausted (2 retries): overloaded",
+		],
 		["a non-retryable error", failure("bad request"), "Summarization failed: bad request"],
 		[
 			"a length stop",
@@ -949,32 +972,39 @@ async function compactionTasks(chat: Chat) {
 }
 
 describe("background threshold compaction", () => {
-	it("starts above the background threshold without blocking the run; idle waits and Esc ignore it", async () => {
-		const chat = await open({ contextWindow: 2000 });
-		await history(chat);
-		chat.setup.settings.compaction = BACKGROUND;
-		const gate = deferred();
-		const reached = deferred();
-		chat.faux.summaries.push(gated(gate, summary(), reached));
-		await turn(chat, text("u4", 100), text("a4", 100));
-		await reached.promise;
-		const [task] = await compactionTasks(chat);
-		expect(task).toMatchObject({ background: true, input: { reason: "threshold" } });
-		expect(task!.owner).toBeUndefined();
-		expect((await live(chat)).compactions).toEqual([
-			{ taskId: task!.id, reason: "threshold", blocking: false, attempt: 1 },
-		]);
-		// Background work: neither conversation idle nor Esc waits for or stops it.
-		await chat.root.waitForIdle(context);
-		await chat.root.abort(context);
-		expect((await chat.harness.getTask(task!.id, context))?.state.status).toBe("running");
-		gate.resolve();
-		const outcome = await result(chat, task!.id as TaskId<CompactionResult>);
-		expect(outcome.status).toBe("completed");
-		expect((await kinds(chat.root)).at(-1)).toBe("pi.compaction");
-		expect(firstUserText((await chat.root.context(context)).messages)).toContain("SUMMARY");
-		await chat.harness.close(context);
-	});
+	it.each([
+		{ contextWindow: 2000, policy: BACKGROUND },
+		{ contextWindow: 1_000_000, policy: { ...BACKGROUND, backgroundAtTokens: 500 } },
+		{ contextWindow: 2000, policy: { ...BACKGROUND, backgroundAtTokens: 272_000 } },
+	])(
+		"starts above the background threshold without blocking the run ($contextWindow); idle waits and Esc ignore it",
+		async ({ contextWindow, policy }) => {
+			const chat = await open({ contextWindow });
+			await history(chat);
+			chat.setup.settings.compaction = policy;
+			const gate = deferred();
+			const reached = deferred();
+			chat.faux.summaries.push(gated(gate, summary(), reached));
+			await turn(chat, text("u4", 100), text("a4", 100));
+			await reached.promise;
+			const [task] = await compactionTasks(chat);
+			expect(task).toMatchObject({ background: true, input: { reason: "threshold" } });
+			expect(task!.owner).toBeUndefined();
+			expect((await live(chat)).compactions).toEqual([
+				{ taskId: task!.id, reason: "threshold", blocking: false, attempt: 1 },
+			]);
+			// Background work: neither conversation idle nor Esc waits for or stops it.
+			await chat.root.waitForIdle(context);
+			await chat.root.abort(context);
+			expect((await chat.harness.getTask(task!.id, context))?.state.status).toBe("running");
+			gate.resolve();
+			const outcome = await result(chat, task!.id as TaskId<CompactionResult>);
+			expect(outcome.status).toBe("completed");
+			expect((await kinds(chat.root)).at(-1)).toBe("pi.compaction");
+			expect(firstUserText((await chat.root.context(context)).messages)).toContain("SUMMARY");
+			await chat.harness.close(context);
+		},
+	);
 
 	for (const [name, policy] of [
 		["disabled", { ...BACKGROUND, enabled: false }],
@@ -1140,7 +1170,7 @@ describe("blocking threshold compaction", () => {
 			detail: "Compaction failed: Summarization failed: bad request",
 		});
 		expect(chat.faux.agentRequests).toHaveLength(requests);
-		expect((await kinds(chat.root)).at(-1)).toBe("pi.user");
+		expect((await kinds(chat.root)).slice(-2)).toEqual(["pi.user", "pi.model-attempt"]);
 		const state = await live(chat);
 		expect(state.compactions).toBeUndefined();
 		expect(state.compactionFailure).toMatchObject({
@@ -1267,7 +1297,7 @@ describe("overflow compaction", () => {
 			detail: OVERFLOW,
 		});
 		expect((await kinds(chat.root)).filter((kind) => kind === "pi.compaction")).toHaveLength(1);
-		expect((await kinds(chat.root)).at(-1)).toBe("pi.assistant");
+		expect((await kinds(chat.root)).slice(-2)).toEqual(["pi.assistant", "pi.model-attempt"]);
 		await chat.harness.close(context);
 	});
 
@@ -1723,6 +1753,16 @@ describe("compaction recovery", () => {
 		const usage = (await chat.harness.snapshot(UsageDoc, chat.root.id, context))!.models["faux/faux-1"]!;
 		expect(usage.input).toBeGreaterThan(usageBefore.input);
 		expect(usage.output - usageBefore.output).toBe(2);
+		const observations = (await rawEntries(chat.root))
+			.filter(ModelObservationEntry.is)
+			.map((entry) => entry.data!)
+			.filter((data) => data.operation === "compaction");
+		expect(observations.map((data) => [data.phase, data.attemptNo])).toEqual([
+			["start", 1],
+			["start", 2],
+			["end", 2],
+		]);
+		expect(observations[0]!.attemptId).not.toBe(observations[1]!.attemptId);
 		await chat.harness.close(context);
 	});
 
@@ -2220,7 +2260,7 @@ describe("blocking and manual compaction together", () => {
 		await chat.harness.close(context);
 	});
 
-	it("places a summary that survived Esc at the next submission, before its input", async () => {
+	it("places a summary at the abort final boundary, before the next input", async () => {
 		const chat = await open();
 		await history(chat);
 		const reached = deferred();
@@ -2235,7 +2275,7 @@ describe("blocking and manual compaction together", () => {
 		))!;
 		await chat.root.abort(context);
 		expect(await busy.wait(context)).toMatchObject({ status: "unanswered", reason: "aborted" });
-		expect((await submission.status(context)).status).toBe("queued");
+		expect((await submission.status(context)).status).toBe("done");
 		await turn(chat, "u5", "a5");
 		expect((await submission.status(context)).status).toBe("done");
 		const request = chat.faux.agentRequests.at(-1)!.messages;

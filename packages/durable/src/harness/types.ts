@@ -68,7 +68,7 @@ export type SubmissionDraft = {
 	| {
 			readonly type: "input";
 			readonly content: UserInput;
-			readonly whenBusy?: "steer" | "followUp" | "reject";
+			readonly whenBusy?: "steer" | "followUp" | "reject" | "interrupt";
 			/** Place the input as this entry; default `pi.user` without data. The kind must not start with `pi.`. */
 			readonly entry?: InputEntry;
 	  }
@@ -215,7 +215,7 @@ export interface ToolExecutionApi<TDetails extends JsonValue = JsonValue> extend
 	readonly registry: RegistrySnapshot;
 	/** The calling conversation's agent, as the tool task's phase resolved it. */
 	agent(context: Context): Promise<Agent>;
-	/** The current `HarnessOptions.models`, read at each access: the catalog, credentials, and request transforms. */
+	/** This invocation’s resolved model access, or the current host model access without a resolver. */
 	readonly models: Models;
 	/** Built by `HarnessOptions.env` for this call; `undefined` without an environment. */
 	readonly env: ExecutionEnv | undefined;
@@ -411,6 +411,8 @@ export interface Registry<Tool extends ToolRegistration = ToolRegistration> exte
 /** Stored choices of one conversation; names, not objects. Unset fields follow the host. */
 export type AgentState = {
 	model?: ModelRef;
+	/** Yonder: ordered fallbacks, each allowed `after` consecutive errors. */
+	modelFallbacks?: { models: ModelRef[]; after: number };
 	thinkingLevel?: ModelThinkingLevel;
 	/** An array selects exactly these extensions, in order. An object edits the host default selection. */
 	extensions?: string[] | { add?: string[]; remove?: string[] };
@@ -435,6 +437,7 @@ export type AgentState = {
 /** A change to `pi.agent`: a given field replaces the stored one, `null` clears it, `undefined` changes nothing. */
 export type AgentChange = {
 	readonly model?: ModelRef | null;
+	readonly modelFallbacks?: { models: ModelRef[]; after: number } | null;
 	readonly thinkingLevel?: ModelThinkingLevel | null;
 	readonly extensions?:
 		| readonly Extension[]
@@ -453,6 +456,7 @@ export type AgentChange = {
 /** A conversation's agent resolved against a registry snapshot and the settings. */
 export type Agent<Tool extends ToolRegistration = ToolRegistration> = {
 	readonly model?: ModelRef;
+	readonly modelFallbacks?: { models: ModelRef[]; after: number };
 	readonly thinkingLevel: ModelThinkingLevel;
 	readonly extensions: readonly Extension<Tool>[];
 	/** The tools a request offers, in order: enabled, callable by the model, and selected by `modelTools`. */
@@ -511,6 +515,8 @@ export type CompactionPolicy = {
 	keepRecentTokens: number;
 	/** Background compaction starts `backgroundTokens` below the blocking threshold; `0` disables it. */
 	backgroundTokens: number;
+	/** Start background compaction by this absolute token count, unless the native threshold is earlier. */
+	backgroundAtTokens?: number;
 };
 
 /**
@@ -624,6 +630,18 @@ export type HarnessOptions<Tool extends ToolRegistration = ToolRegistration> = {
 	readonly registry: RegistryReader<Tool>;
 	/** Run settings, or a function returning the current ones; read at each use either way. */
 	readonly settings?: HarnessSettings | (() => HarnessSettings | undefined);
+	/**
+	 * Yonder fork: bind model access once per task invocation, after its first `beforeAgent` and agent resolution,
+	 * outside the Session line. All phases, hooks, and tool APIs of that invocation keep the returned instance.
+	 * Called again for resumed and abort invocations: restore the same run's binding from application-owned state.
+	 * The application must return an instance bound to its frozen run config, not a mutable active account.
+	 */
+	readonly resolveModels?: (
+		target: EnvTarget & { readonly taskId: TaskId },
+		context: Context,
+	) => Models | Promise<Models>;
+	/** Yonder fork: runs before task agent resolution, outside the Session line. */
+	readonly beforeAgent?: (target: EnvTarget, context: Context) => void | Promise<void>;
 	/** Builds a conversation's environment at each use. Never called on the Session line; may be async. */
 	readonly env?: (target: EnvTarget, context: Context) => ExecutionEnv | undefined | Promise<ExecutionEnv | undefined>;
 	/**
@@ -840,7 +858,7 @@ export interface Harness extends Session {
 export interface HookApi extends DocumentReader {
 	readonly taskId: TaskId;
 	readonly conversationId: ConversationId;
-	/** The current `HarnessOptions.models`, read at each access. */
+	/** This invocation’s resolved model access, or the current host model access without a resolver. */
 	readonly models: Models;
 	memo<T extends JsonValue>(name: string, context: Context): Promise<T | undefined>;
 	memo<T extends JsonValue>(name: string, candidate: T, context: Context): Promise<T>;
@@ -858,6 +876,8 @@ export interface GenerationHooks {
 	): HookResult<{ readonly messages: readonly Message[] }>;
 	/** Every terminal provider message, before classification. */
 	afterResponse(message: AssistantMessage, api: HookApi, context: Context): void | Promise<void>;
+	/** Yonder fork: override error classification; native budget, overflow and abort rules still apply. Last defined decision wins. */
+	shouldRetry(message: AssistantMessage, api: HookApi, context: Context): HookResult<boolean>;
 	/** A final answer; the first `continue` appends a user message and continues the run. */
 	onYield(answer: AssistantMessage, api: HookApi, context: Context): HookResult<{ readonly continue: UserInput }>;
 	/** After every tool of the round is terminal; `results` are the round's result entries in call order. */
@@ -887,7 +907,7 @@ export interface ToolHooks {
 }
 
 /** Hooks of the built-in compaction task. */
-export interface CompactionHooks {
+export interface CompactionHooks extends Pick<GenerationHooks, "shouldRetry"> {
 	/**
 	 * After range selection, before summarizing; the first decision wins. `entries` are the active entries the summary
 	 * replaces, the head marker first, and `messages` their model context, the summarizer's source; `firstKept` is the

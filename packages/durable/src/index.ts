@@ -21,7 +21,9 @@ export {
 	type CompactionCheckpoint,
 	type CompactionInput,
 	CompactionTask,
+	estimateContext,
 	type SummaryRequest,
+	selectCut,
 } from "./harness/compaction.ts";
 export { defineExtension, defineTool, hook, section, wrapSection, wrapTool } from "./harness/define.ts";
 export {
@@ -47,8 +49,11 @@ export {
 	type LiveState,
 	type NestedToolSlot,
 	type NestedToolSummary,
+	RunReceiptDoc,
+	type RunReceiptState,
 	type ToolSlot,
 } from "./harness/live.ts";
+export { type ModelObservation, ModelObservationEntry } from "./harness/model-observation.ts";
 export { ProviderDoc, type ProviderState } from "./harness/provider.ts";
 export { createRegistry } from "./harness/registry.ts";
 export type { BlockedReason } from "./harness/scheduler.ts";

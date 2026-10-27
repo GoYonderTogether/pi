@@ -225,13 +225,23 @@ class HarnessImpl<Tool extends ToolRegistration> extends SessionImpl implements 
 		this.#report = report;
 		this.#hostSettings = hostSettings;
 		const settings = () => resolveSettings(hostSettings());
+		const resolveModels = options.resolveModels;
 		this.#tasks = new TaskScheduler({
 			telemetry: options.telemetry,
 			session: this,
 			storage,
 			registry: options.registry,
 			models: currentModels(options.models, options.identity),
-			agent: (id, snapshot, callContext) => this.resolveAgent(id, snapshot as RegistrySnapshot<Tool>, callContext),
+			...(resolveModels === undefined
+				? {}
+				: {
+						resolveModels: (id: ConversationId, taskId: TaskId, callContext: Context) =>
+							resolveModels({ conversationId: id, taskId, read: this }, callContext),
+					}),
+			agent: async (id, snapshot, callContext) => {
+				await options.beforeAgent?.({ conversationId: id, read: this }, callContext);
+				return this.resolveAgent(id, snapshot as RegistrySnapshot<Tool>, callContext);
+			},
 			settings,
 			env: (id, callContext) => this.buildEnv(id, callContext),
 			now,
@@ -271,9 +281,13 @@ class HarnessImpl<Tool extends ToolRegistration> extends SessionImpl implements 
 	): Promise<Agent<Tool>> {
 		const registry = snapshot ?? this.#options.registry.snapshot();
 		const state = await this.snapshot(AgentDoc, id, context);
-		return resolveAgent(state, registry, resolveSettings(this.#hostSettings()), (error, extension) =>
+		const agent = resolveAgent(state, registry, resolveSettings(this.#hostSettings()), (error, extension) =>
 			this.#report(error, { type: "extension_error", conversationId: id, extension }, context),
 		);
+		const live = await this.snapshot(LiveDoc, id, context);
+		const index = live?.run?.modelFallback?.index ?? 0;
+		const model = index > 0 ? agent.modelFallbacks?.models[index - 1] : undefined;
+		return model === undefined ? agent : { ...agent, model };
 	}
 
 	/** Build a conversation's environment from its current `cwd`; `undefined` without an `env` option. */

@@ -26,7 +26,7 @@ import { formatProviderError, normalizeProviderError } from "../utils/error-body
 import { AssistantMessageEventStream } from "../utils/event-stream.ts";
 import { providerHeadersToRecord } from "../utils/headers.ts";
 import { type ClientIdentity, getIdentityHeaders } from "../utils/identity.ts";
-import { getProviderEnvValue } from "../utils/provider-env.ts";
+import { getProviderEnvValue, hasExplicitCredentials } from "../utils/provider-env.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
 import { getSystemMessageText } from "../utils/text.ts";
 import { collapseSystemMessages, getCurrentTools, getInitialSystemMessage } from "../utils/transcript.ts";
@@ -436,6 +436,9 @@ function baseUrlIncludesApiVersion(baseUrl: string): boolean {
 
 function buildGoogleAuthOptions(env?: ProviderEnv): { keyFilename: string } | undefined {
 	const keyFilename = getProviderEnvValue("GOOGLE_APPLICATION_CREDENTIALS", env);
+	if (hasExplicitCredentials(env) && !keyFilename) {
+		throw new Error("Explicit Vertex credentials require a credentials file; default ADC is not supported");
+	}
 	return keyFilename ? { keyFilename } : undefined;
 }
 

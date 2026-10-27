@@ -56,7 +56,7 @@ import { providerHeadersToRecord } from "../utils/headers.ts";
 import { type ClientIdentity, getClientVersion } from "../utils/identity.ts";
 import { parseStreamingJson, parseToolCallArguments } from "../utils/json-parse.ts";
 import { resolveHttpProxyUrlForTarget } from "../utils/node-http-proxy.ts";
-import { getProviderEnvValue } from "../utils/provider-env.ts";
+import { getProviderEnvValue, hasExplicitCredentials } from "../utils/provider-env.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
 import { getSystemMessageText } from "../utils/text.ts";
 import {
@@ -166,7 +166,8 @@ export const stream: StreamFunction<"bedrock-converse-stream", BedrockOptions> =
 			customUserAgent: bedrockUserAgent(options.identity),
 		};
 		const configuredRegion = getConfiguredBedrockRegion(options);
-		const hasAmbientConfiguredProfile = Boolean(getProviderEnvValue("AWS_PROFILE"));
+		const hasAmbientConfiguredProfile =
+			!hasExplicitCredentials(options.env) && Boolean(getProviderEnvValue("AWS_PROFILE"));
 		const endpointRegion = getStandardBedrockEndpointRegion(model.baseUrl);
 		const useExplicitEndpoint = shouldUseExplicitBedrockEndpoint(
 			model.baseUrl,
@@ -249,6 +250,22 @@ export const stream: StreamFunction<"bedrock-converse-stream", BedrockOptions> =
 		let responseRequestId: string | undefined;
 
 		try {
+			if (hasExplicitCredentials(options.env)) {
+				if (skipAuth || optionsProfile || (!useBearerToken && !config.credentials)) {
+					throw new Error(
+						"Explicit Bedrock credentials require a bearer token or complete access keys; ambient chains and profiles are not supported",
+					);
+				}
+				// A bearer request must not ask the SDK to resolve an ambient signing identity.
+				if (useBearerToken) {
+					config.credentials = { accessKeyId: "unused", secretAccessKey: "unused" };
+				} else {
+					config.authSchemePreference = ["sigv4"];
+					config.token = async () => {
+						throw new Error("Ambient Bedrock bearer tokens are disabled");
+					};
+				}
+			}
 			const supportsStrictMode = model.compat?.supportsStrictMode ?? false;
 			const client = new BedrockRuntimeClient(config);
 			let observedRawResponse = false;

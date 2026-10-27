@@ -33,6 +33,7 @@ vi.mock("@google/genai", () => {
 
 	return {
 		GoogleGenAI,
+		FinishReason: { STOP: "STOP" },
 		ResourceScope: {
 			COLLECTION: "COLLECTION",
 		},
@@ -238,5 +239,45 @@ describe("google-vertex api key resolution", () => {
 				apiVersion: "",
 			},
 		});
+	});
+});
+
+describe("explicit Vertex credential isolation", () => {
+	afterEach(() => vi.unstubAllEnvs());
+
+	it("pins the explicit file/project/location despite ambient API keys and ADC", async () => {
+		vi.stubEnv("GOOGLE_API_KEY", "ambient-key");
+		vi.stubEnv("GOOGLE_CLOUD_API_KEY", "ambient-cloud-key");
+		vi.stubEnv("GOOGLE_APPLICATION_CREDENTIALS", "/ambient/adc.json");
+		vi.stubEnv("GOOGLE_CLOUD_PROJECT", "ambient-project");
+		vi.stubEnv("GOOGLE_CLOUD_LOCATION", "ambient-location");
+		const result = await streamGoogleVertex(model, context, {
+			env: {
+				PI_AUTH_EXPLICIT_CREDENTIALS: "1",
+				GOOGLE_APPLICATION_CREDENTIALS: "/explicit/account.json",
+				GOOGLE_CLOUD_PROJECT: "slot-project",
+				GOOGLE_CLOUD_LOCATION: "slot-location",
+			},
+		}).result();
+		expect(result.errorMessage).toBeUndefined();
+		expect(result.stopReason).toBe("stop");
+		expect(googleGenAiMock.constructorCalls[0]).toMatchObject({
+			project: "slot-project",
+			location: "slot-location",
+			googleAuthOptions: { keyFilename: "/explicit/account.json" },
+		});
+		expect(googleGenAiMock.constructorCalls[0]).not.toHaveProperty("apiKey");
+	});
+
+	it("rejects default ADC before SDK construction", async () => {
+		vi.stubEnv("GOOGLE_APPLICATION_CREDENTIALS", "/ambient/adc.json");
+		const result = await streamGoogleVertex(model, context, {
+			project: "slot-project",
+			location: "slot-location",
+			env: { PI_AUTH_EXPLICIT_CREDENTIALS: "1" },
+		}).result();
+		expect(result.stopReason).toBe("error");
+		expect(result.errorMessage).toContain("default ADC is not supported");
+		expect(googleGenAiMock.constructorCalls).toHaveLength(0);
 	});
 });

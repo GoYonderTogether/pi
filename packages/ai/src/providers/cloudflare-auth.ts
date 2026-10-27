@@ -1,3 +1,4 @@
+import { credentialAuthContext } from "../auth/context.ts";
 import type { ApiKeyAuth, ApiKeyCredential, AuthContext } from "../auth/types.ts";
 import type { ProviderEnv } from "../types.ts";
 
@@ -34,6 +35,7 @@ async function resolveCloudflareEnv(
 	credential: ApiKeyCredential | undefined,
 	signal: AbortSignal,
 ): Promise<{ apiKey: string; env: ProviderEnv; source: string } | undefined> {
+	ctx = credentialAuthContext(ctx, credential);
 	const apiKey = await resolveValue(CLOUDFLARE_API_KEY, ctx, credential, signal);
 	const accountId = await resolveValue(CLOUDFLARE_ACCOUNT_ID, ctx, credential, signal);
 	const gatewayId =

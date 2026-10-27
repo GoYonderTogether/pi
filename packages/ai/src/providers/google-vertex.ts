@@ -1,4 +1,5 @@
 import { googleVertexApi } from "../api/google-vertex.lazy.ts";
+import { credentialAuthContext } from "../auth/context.ts";
 import type { ApiKeyAuth } from "../auth/types.ts";
 import { createProvider, type Provider } from "../models.ts";
 import { GOOGLE_VERTEX_MODELS } from "./google-vertex.models.ts";
@@ -62,6 +63,7 @@ const vertexAuth: ApiKeyAuth = {
 		};
 	},
 	resolve: async ({ ctx, credential, signal }) => {
+		ctx = credentialAuthContext(ctx, credential);
 		const env = async (name: string) => {
 			signal.throwIfAborted();
 			const value = await ctx.env(name);
@@ -72,6 +74,9 @@ const vertexAuth: ApiKeyAuth = {
 		if (key) return { auth: { apiKey: key }, source: credential?.key ? "stored credential" : "GOOGLE_CLOUD_API_KEY" };
 
 		const adcPath = credential?.env?.GOOGLE_APPLICATION_CREDENTIALS ?? (await env("GOOGLE_APPLICATION_CREDENTIALS"));
+		if (ctx.credentialMode === "explicit" && (!adcPath || !/^(?:\/|[A-Za-z]:[\\/])/.test(adcPath))) {
+			throw new Error("Explicit Vertex credentials require an absolute credentials file path or an API key");
+		}
 		signal.throwIfAborted();
 		const hasCredentials = await ctx.fileExists(adcPath ?? VERTEX_ADC_PATH);
 		signal.throwIfAborted();
@@ -81,7 +86,15 @@ const vertexAuth: ApiKeyAuth = {
 		if (hasCredentials && project && location) {
 			return {
 				auth: {},
-				env: credential?.env,
+				env:
+					ctx.credentialMode === "explicit"
+						? {
+								...credential?.env,
+								GOOGLE_APPLICATION_CREDENTIALS: adcPath!,
+								GOOGLE_CLOUD_PROJECT: project,
+								GOOGLE_CLOUD_LOCATION: location,
+							}
+						: credential?.env,
 				source: credential ? "stored credential" : "gcloud application default credentials",
 			};
 		}

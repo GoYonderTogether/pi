@@ -1,3 +1,4 @@
+import { credentialAuthContext } from "./context.ts";
 import type { ApiKeyAuth, OAuthAuth } from "./types.ts";
 
 /**
@@ -16,6 +17,7 @@ export function envApiKeyAuth(name: string, envVars: readonly string[]): ApiKeyA
 			return { type: "api_key", key };
 		},
 		resolve: async ({ ctx, credential, signal }) => {
+			ctx = credentialAuthContext(ctx, credential);
 			signal.throwIfAborted();
 			if (credential?.key) {
 				return { auth: { apiKey: credential.key }, env: credential.env, source: "stored credential" };

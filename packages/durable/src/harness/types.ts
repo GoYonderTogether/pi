@@ -210,7 +210,7 @@ export interface ToolExecutionApi<TDetails extends JsonValue = JsonValue> extend
 	readonly registry: RegistrySnapshot;
 	/** The calling conversation's agent, as the tool task's phase resolved it. */
 	agent(context: Context): Promise<Agent>;
-	/** `HarnessOptions.models`: the catalog, credentials, and request transforms generation uses. */
+	/** This task invocation's resolved model access, also used by generation and compaction. */
 	readonly models: Models;
 	/** Built by `HarnessOptions.env` for this call; `undefined` without an environment. */
 	readonly env: ExecutionEnv | undefined;
@@ -580,8 +580,18 @@ export type EnvTarget = {
 };
 
 export type HarnessOptions<Tool extends ToolRegistration = ToolRegistration> = {
-	/** pi-ai model access used by generation. */
+	/** Default pi-ai model access when `resolveModels` is absent. */
 	readonly models: Models;
+	/**
+	 * Yonder fork: bind model access once per task invocation, after its first `beforeAgent` and agent resolution,
+	 * outside the Session line. All phases, hooks, and tool APIs of that invocation keep the returned instance.
+	 * Called again for resumed and abort invocations: restore the same run's binding from application-owned state.
+	 * The application must return an instance bound to its frozen run config, not a mutable active account.
+	 */
+	readonly resolveModels?: (
+		target: EnvTarget & { readonly taskId: TaskId },
+		context: Context,
+	) => Models | Promise<Models>;
 	readonly registry: RegistryReader<Tool>;
 	/** Yonder fork: runs before task agent resolution, outside the Session line. */
 	readonly beforeAgent?: (target: EnvTarget, context: Context) => void | Promise<void>;
@@ -753,7 +763,7 @@ export interface Harness extends Session {
 export interface HookApi extends DocumentReader {
 	readonly taskId: TaskId;
 	readonly conversationId: ConversationId;
-	/** `HarnessOptions.models`. */
+	/** This task invocation's resolved model access. */
 	readonly models: Models;
 	memo<T extends JsonValue>(name: string, context: Context): Promise<T | undefined>;
 	memo<T extends JsonValue>(name: string, candidate: T, context: Context): Promise<T>;

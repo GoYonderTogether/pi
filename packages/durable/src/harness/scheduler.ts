@@ -153,6 +153,12 @@ export type TaskSchedulerOptions = {
 	readonly storage: Storage;
 	readonly registry: RegistryReader;
 	readonly models: Models;
+	/** Bind model access after the invocation's first agent preparation. */
+	readonly resolveModels?: (
+		conversationId: ConversationId,
+		taskId: TaskId,
+		context: Context,
+	) => Models | Promise<Models>;
 	/** Resolve a conversation's agent against a snapshot; the runtime calls it at most once per phase. */
 	readonly agent: (conversationId: ConversationId, snapshot: RegistrySnapshot, context: Context) => Promise<Agent>;
 	/** Resolve the settings; read at each access. */
@@ -201,6 +207,7 @@ export class TaskScheduler {
 	readonly #storage: Storage;
 	readonly #registry: RegistryReader;
 	readonly #models: Models;
+	readonly #resolveModels: TaskSchedulerOptions["resolveModels"];
 	readonly #agent: TaskSchedulerOptions["agent"];
 	readonly #settings: TaskSchedulerOptions["settings"];
 	readonly #env: TaskSchedulerOptions["env"];
@@ -274,6 +281,7 @@ export class TaskScheduler {
 		this.#storage = options.storage;
 		this.#registry = options.registry;
 		this.#models = options.models;
+		this.#resolveModels = options.resolveModels;
 		this.#agent = options.agent;
 		this.#settings = options.settings;
 		this.#env = options.env;
@@ -1319,7 +1327,7 @@ export class TaskScheduler {
 		const invocation = reservation.invocation;
 		const state = { task: reservation.task, snapshot: reservation.snapshot, reported: undefined as ReportedTask };
 		const phase: Phase = { snapshot: () => state.snapshot, task: () => state.task, agent: undefined };
-		const runtime = this.#runtime(invocation, phase);
+		let runtime: ErasedRuntime | undefined;
 		let previous: PhaseResult | undefined;
 		for (;;) {
 			const current = await this.#step(invocation, (tx, current) => this.#decide(tx, current, previous, state));
@@ -1329,6 +1337,7 @@ export class TaskScheduler {
 			// Each phase handler resolves its agent afresh, at first use.
 			phase.agent = undefined;
 			try {
+				runtime ??= await this.#runtime(invocation, phase);
 				await erased(state.task).phases[checkpoint.phase]!(current, runtime, invocation.context);
 				previous = { checkpoint };
 			} catch (error) {
@@ -1390,7 +1399,7 @@ export class TaskScheduler {
 		let failure: { readonly error: unknown } | undefined;
 		try {
 			const phase: Phase = { snapshot: () => reservation.snapshot, task: () => reservation.task, agent: undefined };
-			const runtime = this.#runtime(invocation, phase);
+			const runtime = await this.#runtime(invocation, phase);
 			await erased(reservation.task).abort(current, runtime, invocation.context);
 		} catch (error) {
 			failure = { error };
@@ -1587,7 +1596,7 @@ export class TaskScheduler {
 
 	// ─── Invocation runtime ──────────────────────────────────────────────────
 
-	#runtime(invocation: Invocation, phase: Phase): ErasedRuntime {
+	async #runtime(invocation: Invocation, phase: Phase): Promise<ErasedRuntime> {
 		// Resolved at most once per phase handler, at first use, with the invocation's context; fixed for the phase.
 		const agent = (): Promise<Agent> => {
 			if (invocation.ended) return Promise.reject(endedError(invocation));
@@ -1598,6 +1607,15 @@ export class TaskScheduler {
 			}
 			return phase.agent;
 		};
+		// A synchronous runtime.models is safe only after application preparation has frozen this run's config.
+		// Keep the result on this runtime, not on the scheduler or phase: later phases may prepare agents afresh.
+		let models = this.#models;
+		if (this.#resolveModels !== undefined) {
+			await agent();
+			models = await this.#resolveModels(invocation.conversationId, invocation.taskId, invocation.context);
+			if (invocation.ended) throw endedError(invocation);
+			invocation.context.abortSignal?.throwIfAborted();
+		}
 		const hooks: HookRunner<Record<string, unknown>> = {
 			each: async (name, invoke) => {
 				for (const handlers of agentHooks(await agent(), phase.task().definition.name)) {
@@ -1617,7 +1635,7 @@ export class TaskScheduler {
 			taskId: invocation.taskId as TaskId<JsonValue>,
 			conversationId: invocation.conversationId,
 			signal: invocation.controller.signal,
-			models: this.#models,
+			models,
 			agent: (context) =>
 				invocation.ended ? Promise.reject(endedError(invocation)) : awaitWithContext(agent(), context),
 			get settings() {

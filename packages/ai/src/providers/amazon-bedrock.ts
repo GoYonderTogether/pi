@@ -1,4 +1,5 @@
 import { bedrockConverseStreamApi } from "../api/bedrock-converse-stream.lazy.ts";
+import { credentialAuthContext } from "../auth/context.ts";
 import type { ApiKeyAuth } from "../auth/types.ts";
 import { createProvider, type Provider } from "../models.ts";
 import { AMAZON_BEDROCK_MODELS } from "./amazon-bedrock.models.ts";
@@ -52,6 +53,7 @@ const bedrockAuth: ApiKeyAuth = {
 		return { type: "api_key" };
 	},
 	resolve: async ({ ctx, credential, signal }) => {
+		ctx = credentialAuthContext(ctx, credential);
 		const env = async (name: string) => {
 			signal.throwIfAborted();
 			const value = await ctx.env(name);
@@ -60,6 +62,19 @@ const bedrockAuth: ApiKeyAuth = {
 		};
 		if (credential?.key) {
 			return { auth: { apiKey: credential.key }, env: credential.env, source: "stored credential" };
+		}
+		if (ctx.credentialMode === "explicit") {
+			const bearer = await env("AWS_BEARER_TOKEN_BEDROCK");
+			if (bearer) return { auth: { apiKey: bearer }, env: credential?.env, source: "stored credential" };
+			if (await env("AWS_PROFILE")) {
+				throw new Error(
+					"Explicit AWS profiles are not supported by the default credential chain; use explicit access keys or a bearer token",
+				);
+			}
+			if ((await env("AWS_ACCESS_KEY_ID")) && (await env("AWS_SECRET_ACCESS_KEY"))) {
+				return { auth: {}, env: credential?.env, source: "stored credential" };
+			}
+			throw new Error("Explicit Bedrock credentials require a bearer token or complete access keys");
 		}
 		if (await env("AWS_BEARER_TOKEN_BEDROCK")) return { auth: {}, source: "AWS_BEARER_TOKEN_BEDROCK" };
 		if (credential?.env?.AWS_PROFILE ?? (await env("AWS_PROFILE"))) {

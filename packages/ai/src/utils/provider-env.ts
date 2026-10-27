@@ -1,5 +1,12 @@
 import type { ProviderEnv } from "../types.ts";
 
+/** Internal request-scoped marker, propagated by strict auth resolution. */
+export const EXPLICIT_CREDENTIAL_ENV = "PI_AUTH_EXPLICIT_CREDENTIALS";
+
+export function hasExplicitCredentials(env?: ProviderEnv): boolean {
+	return env?.[EXPLICIT_CREDENTIAL_ENV] === "1";
+}
+
 let procEnvCache: Map<string, string> | null = null;
 
 /**
@@ -43,6 +50,7 @@ function getBunSandboxEnvValue(name: string): string | undefined {
  * the duplicated Bun sandbox fallback for direct pi-ai consumers.
  */
 export function getProviderEnvValue(name: string, env?: ProviderEnv): string | undefined {
+	if (hasExplicitCredentials(env)) return env?.[name] || undefined;
 	return (
 		env?.[name] ||
 		(typeof process !== "undefined" ? process.env[name] : undefined) ||

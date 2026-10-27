@@ -1,4 +1,4 @@
-import type { AuthContext } from "./types.ts";
+import type { ApiKeyCredential, AuthContext } from "./types.ts";
 
 interface NodeFsModule {
 	access(path: string): Promise<void>;
@@ -41,5 +41,15 @@ export function defaultProviderAuthContext(): AuthContext {
 				return false;
 			}
 		},
+	};
+}
+
+/** Restrict provider resolution to the bound credential's explicit env values. */
+export function credentialAuthContext(ctx: AuthContext, credential?: ApiKeyCredential): AuthContext {
+	if (ctx.credentialMode !== "explicit") return ctx;
+	return {
+		credentialMode: "explicit",
+		env: async (name) => credential?.env?.[name] || undefined,
+		fileExists: (path) => ctx.fileExists(path),
 	};
 }

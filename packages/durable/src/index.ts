@@ -52,6 +52,7 @@ export {
 	type RunReceiptState,
 	type ToolSlot,
 } from "./harness/live.ts";
+export { type ModelObservation, ModelObservationEntry } from "./harness/model-observation.ts";
 export { ProviderDoc, type ProviderState } from "./harness/provider.ts";
 export { createRegistry } from "./harness/registry.ts";
 export type { TaskGraph, TaskGraphNode, TaskGraphState, TaskGraphWatch } from "./harness/task-graph.ts";

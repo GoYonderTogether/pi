@@ -4,6 +4,7 @@ import { BACKGROUND_CONTEXT as context } from "@earendil-works/chord/context";
 import { createModels, createProvider } from "@earendil-works/pi-ai";
 import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completions.lazy";
 import {
+	type Cursor,
 	createRegistry,
 	defineExtension,
 	GenerationTask,
@@ -11,6 +12,7 @@ import {
 	hook,
 	LiveDoc,
 	MemoryStorage,
+	ModelObservationEntry,
 	RunReceiptDoc,
 } from "@earendil-works/pi-durable";
 import { expect, it } from "vitest";
@@ -104,6 +106,34 @@ it.each([false, true])(
 			const result = await input.wait(context);
 			expect(result).toMatchObject({ status: "unanswered", reason: "model_error" });
 			expect(opened.calls).toHaveLength(decision ? 3 : 1);
+			const observationEntries = [];
+			let cursor: Cursor | undefined;
+			do {
+				const page = await opened.conversation.commit(
+					(tx) => tx.scanEntries({ conversationId: opened.conversation.id, order: "ascending" }, 100, cursor),
+					context,
+				);
+				observationEntries.push(...page.items.filter(ModelObservationEntry.is));
+				cursor = page.next;
+			} while (cursor !== undefined);
+			expect(observationEntries).toHaveLength(opened.calls.length * 2);
+			expect(observationEntries.map((entry) => entry.data?.phase)).toEqual(
+				opened.calls.flatMap(() => ["start", "end"]),
+			);
+			for (let i = 0; i < opened.calls.length; i++) {
+				const start = observationEntries[i * 2]!.data!;
+				const end = observationEntries[i * 2 + 1]!.data!;
+				expect(start.attemptNo).toBe(i + 1);
+				expect(end.attemptId).toBe(start.attemptId);
+				expect(end).toMatchObject({ operation: "generation", status: "error", errorClass: "provider_error" });
+			}
+			expect(
+				new Set(
+					observationEntries
+						.filter((entry) => entry.data?.phase === "start")
+						.map((entry) => entry.data?.attemptId),
+				).size,
+			).toBe(opened.calls.length);
 			if (decision) {
 				for (let i = 1; i < opened.calls.length; i++)
 					expect(opened.calls[i]! - opened.calls[i - 1]!).toBeGreaterThanOrEqual(15);

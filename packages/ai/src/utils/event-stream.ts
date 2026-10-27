@@ -1,4 +1,5 @@
 import type { AssistantMessage, AssistantMessageEvent } from "../types.ts";
+import { createAssistantMessageObservation } from "./observation.ts";
 
 class FifoQueue<T> {
 	private incoming: T[] = [];
@@ -97,6 +98,7 @@ export class EventStream<T, R = T> implements AsyncIterable<T> {
 export class AssistantMessageEventStream extends EventStream<AssistantMessageEvent, AssistantMessage> {
 	readonly #startedAt = Date.now();
 	readonly #startedAtMonotonic = performance.now();
+	readonly #timing = createAssistantMessageObservation().timing;
 
 	constructor() {
 		super(
@@ -113,6 +115,30 @@ export class AssistantMessageEventStream extends EventStream<AssistantMessageEve
 	}
 
 	override push(event: AssistantMessageEvent): void {
+		if (this.done) return;
+		const elapsed = this.#elapsed();
+		this.#timing.firstNormalizedEventMs ??= elapsed;
+		if (
+			(event.type === "text_delta" || event.type === "thinking_delta" || event.type === "toolcall_delta") &&
+			event.delta.length > 0
+		) {
+			const timing = this.#timing;
+			timing.firstEffectiveDeltaMs ??= elapsed;
+			timing.lastEffectiveDeltaMs = elapsed;
+			if (event.type === "text_delta") {
+				timing.firstTextDeltaMs ??= elapsed;
+				timing.lastTextDeltaMs = elapsed;
+				timing.textDeltaCount++;
+			} else if (event.type === "thinking_delta") {
+				timing.firstThinkingDeltaMs ??= elapsed;
+				timing.lastThinkingDeltaMs = elapsed;
+				timing.thinkingDeltaCount++;
+			} else {
+				timing.firstToolDeltaMs ??= elapsed;
+				timing.lastToolDeltaMs = elapsed;
+				timing.toolDeltaCount++;
+			}
+		}
 		if (event.type === "done") this.#time(event.message);
 		else if (event.type === "error") this.#time(event.error);
 		super.push(event);
@@ -124,8 +150,21 @@ export class AssistantMessageEventStream extends EventStream<AssistantMessageEve
 	}
 
 	#time(message: AssistantMessage): void {
-		if (this.done || message.durationMs !== undefined || message.timestamp < this.#startedAt) return;
-		message.durationMs = Math.max(0, Math.round(performance.now() - this.#startedAtMonotonic));
+		if (
+			this.done ||
+			message.durationMs !== undefined ||
+			message.timestamp < this.#startedAt ||
+			message.observation?.timing.endMs != null
+		)
+			return;
+		message.durationMs = this.#elapsed();
+		message.observation ??= createAssistantMessageObservation();
+		this.#timing.endMs = message.durationMs;
+		message.observation.timing = { ...this.#timing };
+	}
+
+	#elapsed(): number {
+		return Math.max(0, Math.round(performance.now() - this.#startedAtMonotonic));
 	}
 }
 

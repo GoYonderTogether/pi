@@ -34,6 +34,7 @@ import type {
 import type { AssistantMessageEventStream } from "../utils/event-stream.ts";
 import { shortHash } from "../utils/hash.ts";
 import { parseStreamingJson, parseToolCallArguments } from "../utils/json-parse.ts";
+import { observationModelLabel, observeOpenAIUsage } from "../utils/observation.ts";
 import { sanitizeSurrogates } from "../utils/sanitize-unicode.ts";
 import { getSystemMessageText, renderSystemMessageUpdate } from "../utils/text.ts";
 import { resolveTranscript, resolveTranscriptTools } from "../utils/transcript.ts";
@@ -623,6 +624,17 @@ export async function processResponsesStream<TApi extends Api>(
 
 	for await (const event of openaiStream) {
 		await options?.onProviderStreamEvent?.(event, model);
+		if (
+			output.observation &&
+			(event.type === "response.created" ||
+				event.type === "response.completed" ||
+				event.type === "response.incomplete" ||
+				event.type === "response.failed")
+		) {
+			if (typeof event.response.model === "string" && event.response.model.length > 0)
+				output.observation.reportedResponseModel = observationModelLabel(event.response.model);
+			if (event.response.usage) observeOpenAIUsage(output.observation, event.response.usage, true);
+		}
 		if (event.type === "response.created") {
 			output.responseId = event.response.id;
 		} else if (event.type === "response.output_item.added") {

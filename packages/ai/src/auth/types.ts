@@ -95,6 +95,13 @@ export interface CredentialStore {
 
 /** Environment access for auth resolution. Injectable for tests and browsers. */
 export interface AuthContext {
+	/**
+	 * Opt-in identity isolation. Only credential.env and request env overrides
+	 * supply authentication/config values; ctx.env is never consulted. Apps
+	 * resolve named environment references into the bound credential's env.
+	 * Unsupported ambient credential chains fail instead of falling back.
+	 */
+	credentialMode?: "explicit";
 	env(name: string): Promise<string | undefined>;
 	/** Check whether a file exists. Supports a leading `~`. Always false in browsers. */
 	fileExists(path: string): Promise<boolean>;

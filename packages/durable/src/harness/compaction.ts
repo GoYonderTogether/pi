@@ -10,6 +10,7 @@ import type {
 	EntryId,
 	NextTaskState,
 	RunningTask,
+	SubmissionId,
 	TaskId,
 	TaskRuntime,
 	Tx,
@@ -37,7 +38,7 @@ import type {
 } from "./types.ts";
 import { recordUsage } from "./usage.ts";
 
-export type CompactionInput = { reason: CompactionReason; instructions?: string };
+export type CompactionInput = { reason: CompactionReason; instructions?: string; modelRun?: SubmissionId };
 
 /** The pinned summarization request. */
 export type SummaryRequest = ObservationCheckpoint & {
@@ -312,7 +313,12 @@ export async function createCompaction(
 	const ownership =
 		owner === undefined ? ({ kind: "conversation" } as const) : { kind: "task" as const, taskId: owner };
 	const background = owner === undefined && input.reason !== "manual";
-	const taskId = await tx.createTask(CompactionTask, input, { ownership, conversationId, background });
+	const modelRun = (await tx.doc(LiveDoc, conversationId)).run?.inputs[0];
+	const taskId = await tx.createTask(
+		CompactionTask,
+		{ ...input, ...(modelRun === undefined ? {} : { modelRun }) },
+		{ ownership, conversationId, background },
+	);
 	const status = { taskId, reason: input.reason, blocking: owner !== undefined, attempt: 1 };
 	addCompactionStatus(await tx.doc(LiveDoc, conversationId), status);
 	return taskId;

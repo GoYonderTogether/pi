@@ -49,7 +49,8 @@ import type {
 } from "./types.ts";
 import { recordUsage } from "./usage.ts";
 
-export type GenerationInput = Record<string, never>;
+/** Persistent run identity for application model binding, independent of the current live run. */
+export type GenerationInput = { modelRun?: SubmissionId };
 
 export type GenerationCheckpoint = ObservationCheckpoint &
 	(
@@ -818,12 +819,20 @@ export async function startRun(
 	live: Draft<LiveState>,
 	inputs: SubmissionId[],
 ): Promise<void> {
-	live.run = { taskId: await createGeneration(tx, conversationId), inputs };
+	live.run = { taskId: await createGeneration(tx, conversationId, inputs[0]), inputs };
 }
 
 /** A generation owned by its conversation. */
-function createGeneration(tx: Tx, conversationId: ConversationId): Promise<TaskId<GenerationResult>> {
-	return tx.createTask(GenerationTask, {}, { ownership: { kind: "conversation" }, conversationId });
+async function createGeneration(
+	tx: Tx,
+	conversationId: ConversationId,
+	run?: SubmissionId,
+): Promise<TaskId<GenerationResult>> {
+	const modelRun = run ?? (await tx.doc(LiveDoc, conversationId)).run?.inputs[0];
+	return tx.createTask(GenerationTask, modelRun === undefined ? {} : { modelRun }, {
+		ownership: { kind: "conversation" },
+		conversationId,
+	});
 }
 
 /** Hand run control from `from` to `to`; the run's inputs move with it. */

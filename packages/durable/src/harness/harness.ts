@@ -184,11 +184,18 @@ class HarnessImpl<Tool extends ToolRegistration> extends SessionImpl implements 
 		this.#options = options;
 		this.#report = report;
 		const settings = () => resolveSettings(options.settings);
+		const resolveModels = options.resolveModels;
 		this.#tasks = new TaskScheduler({
 			session: this,
 			storage,
 			registry: options.registry,
 			models: options.models,
+			...(resolveModels === undefined
+				? {}
+				: {
+						resolveModels: (id: ConversationId, taskId: TaskId, callContext: Context) =>
+							resolveModels({ conversationId: id, taskId, read: this }, callContext),
+					}),
 			agent: async (id, snapshot, callContext) => {
 				await options.beforeAgent?.({ conversationId: id, read: this }, callContext);
 				return this.resolveAgent(id, snapshot as RegistrySnapshot<Tool>, callContext);

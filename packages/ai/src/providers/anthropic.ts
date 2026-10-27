@@ -1,4 +1,5 @@
 import { anthropicMessagesApi } from "../api/anthropic-messages.lazy.ts";
+import { credentialAuthContext } from "../auth/context.ts";
 import { lazyOAuth } from "../auth/helpers.ts";
 import { loadAnthropicOAuth } from "../auth/oauth/load.ts";
 import type { ApiKeyAuth } from "../auth/types.ts";
@@ -26,6 +27,7 @@ function anthropicApiKeyAuth(): ApiKeyAuth {
 			return { type: "api_key", key };
 		},
 		resolve: async ({ ctx, credential, signal }) => {
+			ctx = credentialAuthContext(ctx, credential);
 			signal.throwIfAborted();
 			if (credential?.key) {
 				return { auth: { apiKey: credential.key }, env: credential.env, source: "stored credential" };
@@ -45,6 +47,8 @@ function anthropicApiKeyAuth(): ApiKeyAuth {
 				signal.throwIfAborted();
 				if (apiKey) return { auth: { apiKey }, source: envVar };
 			}
+
+			if (ctx.credentialMode === "explicit") return undefined;
 
 			// Workload identity federation: the Anthropic SDK exchanges the identity
 			// token for a short-lived access token and refreshes it itself. Last in

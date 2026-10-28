@@ -19,7 +19,7 @@ Yonder model fallback: optional conversation agent model chain, run-scoped durab
 
 Compaction summarization follows the same configured fallback chain, checkpointing each model and its attempt budget. Blocking compaction advances its parent run to the fallback model; manual compaction does not change an in-flight generation.
 
-Generation and compaction share modelRecovery for retry eligibility, fallback advancement, backoff and exhaustion errors. Both expose shouldRetry for host classification, and disable hidden SDK retries so native checkpoints own each attempt. Compaction retains a total attempt counter across fallback models for identical backoff. Failed attempts append non-model pi.model-attempt entries atomically with their next checkpoint or terminal outcome; these record task, operation, model, attempt, error and next action without entering model context.
+Generation and compaction share modelRecovery for retry eligibility, fallback advancement, backoff and exhaustion errors. Both expose shouldRetry for host classification, and disable hidden SDK retries so native checkpoints own each attempt. With a fallback chain, backoff follows the failure count of the model being retried, so each candidate's first retry waits the base delay; without a chain it follows the run attempt. Failed attempts append non-model pi.model-attempt entries atomically with their next checkpoint or terminal outcome; these record task, operation, model, attempt, error and next action without entering model context.
 
 ## Local process lifecycle adapter
 

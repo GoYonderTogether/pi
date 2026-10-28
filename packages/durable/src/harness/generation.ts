@@ -31,6 +31,7 @@ import { createCompaction, estimateContext, selectCut } from "./compaction.ts";
 import { applyBoundary, prepareBoundary } from "./inbox.ts";
 import { assignJson } from "./json.ts";
 import { endRun, LiveDoc, type LiveState, type ToolSlot } from "./live.ts";
+import { abortModelObservation, type ObservationCheckpoint, observeModelAttempt } from "./model-observation.ts";
 import { modelRecovery } from "./model-recovery.ts";
 import { planSystemEntries, renderSections, replaySections } from "./prompt.ts";
 import { ensureProviderSessionId } from "./provider.ts";
@@ -48,50 +49,53 @@ import type {
 } from "./types.ts";
 import { recordUsage } from "./usage.ts";
 
-export type GenerationInput = Record<string, never>;
+/** Persistent run identity for application model binding, independent of the current live run. */
+export type GenerationInput = { modelRun?: SubmissionId };
 
-export type GenerationCheckpoint =
-	| {
-			phase: "prepare";
-			attempt: number;
-			/** The blocking compaction this generation waited for; it starts no other compaction (spec §8.3). */
-			compacted?: TaskId<CompactionResult>;
-			/** Error text of the overflow that started `compacted`; checked once when `prepare` resumes. */
-			overflow?: string;
-			/** Set when the blocking threshold started `compacted`; its outcome is checked once when `prepare` resumes. */
-			threshold?: true;
-	  }
-	| {
-			phase: "request";
-			attempt: number;
-			compacted?: TaskId<CompactionResult>;
-			model: ModelRef;
-			thinkingLevel: ModelThinkingLevel;
-			/** The settings' request options when preparation committed; a resend after recovery uses them unchanged. */
-			streamOptions: ConversationStreamOptions;
-			/** Newest entry included in the request. */
-			cutoff: EntryId;
-	  }
-	| { phase: "retry"; attempt: number; compacted?: TaskId<CompactionResult>; until: number }
-	| {
-			phase: "poll";
-			attempt: number;
-			compacted?: TaskId<CompactionResult>;
-			model: ModelRef;
-			cutoff: EntryId;
-			handle: DeferredHandle;
-			pollAt: number;
-	  }
-	| {
-			/** Waiting on the round's tool tasks, which the generation owns (spec §8.5). */
-			phase: "tools";
-			/** The tool-calling answer. */
-			assistant: EntryId;
-			/** Tool tasks created so far, in call order; grows by one per started call of a sequential round. */
-			tools: TaskId<ToolTaskResult>[];
-			/** Calls of a sequential round not started yet, in call order. */
-			pending: string[];
-	  };
+export type GenerationCheckpoint = ObservationCheckpoint &
+	(
+		| {
+				phase: "prepare";
+				attempt: number;
+				/** The blocking compaction this generation waited for; it starts no other compaction (spec §8.3). */
+				compacted?: TaskId<CompactionResult>;
+				/** Error text of the overflow that started `compacted`; checked once when `prepare` resumes. */
+				overflow?: string;
+				/** Set when the blocking threshold started `compacted`; its outcome is checked once when `prepare` resumes. */
+				threshold?: true;
+		  }
+		| {
+				phase: "request";
+				attempt: number;
+				compacted?: TaskId<CompactionResult>;
+				model: ModelRef;
+				thinkingLevel: ModelThinkingLevel;
+				/** The settings' request options when preparation committed; a resend after recovery uses them unchanged. */
+				streamOptions: ConversationStreamOptions;
+				/** Newest entry included in the request. */
+				cutoff: EntryId;
+		  }
+		| { phase: "retry"; attempt: number; compacted?: TaskId<CompactionResult>; until: number }
+		| {
+				phase: "poll";
+				attempt: number;
+				compacted?: TaskId<CompactionResult>;
+				model: ModelRef;
+				cutoff: EntryId;
+				handle: DeferredHandle;
+				pollAt: number;
+		  }
+		| {
+				/** Waiting on the round's tool tasks, which the generation owns (spec §8.5). */
+				phase: "tools";
+				/** The tool-calling answer. */
+				assistant: EntryId;
+				/** Tool tasks created so far, in call order; grows by one per started call of a sequential round. */
+				tools: TaskId<ToolTaskResult>[];
+				/** Calls of a sequential round not started yet, in call order. */
+				pending: string[];
+		  }
+	);
 
 export type GenerationResult = { entryId: EntryId };
 
@@ -134,7 +138,7 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 			const { model, thinkingLevel } = agent;
 			const resolved = model === undefined ? undefined : runtime.models.getModel(model.provider, model.modelId);
 			if (model === undefined || resolved === undefined) return failNoModel(runtime, model, context);
-			const { attempt, compacted, overflow, threshold: blocked } = task.state.checkpoint;
+			const { attempt, compacted, overflow, threshold: blocked, observationAttemptNo } = task.state.checkpoint;
 			if (compacted !== undefined && overflow !== undefined) {
 				const [outcome] = await runtime.outcomes([compacted], context);
 				if (outcome?.status !== "completed" || outcome.result.entryId === undefined) {
@@ -170,7 +174,13 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 				// Compact first and prepare again; the transcript is unchanged until the compaction appends.
 				await runtime.commit(async (tx): Promise<Next> => {
 					const child = await createCompaction(tx, conversationId, { reason: "threshold" }, runtime.taskId);
-					const checkpoint = { phase: "prepare", attempt, compacted: child, threshold: true } as const;
+					const checkpoint = {
+						phase: "prepare",
+						attempt,
+						compacted: child,
+						threshold: true,
+						...(observationAttemptNo === undefined ? {} : { observationAttemptNo }),
+					} as const;
 					return { status: "waiting", checkpoint, on: [child], policy: "allSettled" };
 				}, context);
 				return;
@@ -185,6 +195,7 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 				}
 				const request = {
 					attempt,
+					...(observationAttemptNo === undefined ? {} : { observationAttemptNo }),
 					...(compacted === undefined ? {} : { compacted }),
 					model,
 					thinkingLevel,
@@ -218,17 +229,25 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 				sessionId: await ensureProviderSessionId(runtime, context),
 				...(thinkingLevel === "off" ? {} : { reasoning: thinkingLevel }),
 			};
-			const message = await streamResponse(runtime, model, messages, options, attempt, context);
+			const message = await observeModelAttempt(
+				runtime,
+				"generation",
+				model,
+				thinkingLevel,
+				() => streamResponse(runtime, model, messages, options, attempt, context),
+				context,
+			);
 			const request = { attempt, compacted, model: ref, cutoff, messages: view.messages };
 			await classify(runtime, request, message, context);
 		},
 		retry: async (task, runtime, context) => {
-			const { attempt, compacted, until } = task.state.checkpoint;
+			const { attempt, compacted, until, observationAttemptNo } = task.state.checkpoint;
 			await runtime.sleep(until, context);
 			await runtime.commit(async (tx) => {
 				(await tx.doc(LiveDoc, runtime.conversationId)).generation = { attempt: attempt + 1 };
 				const checkpoint: GenerationCheckpoint = {
 					phase: "prepare",
+					...(observationAttemptNo === undefined ? {} : { observationAttemptNo }),
 					attempt: attempt + 1,
 					...(compacted === undefined ? {} : { compacted }),
 				};
@@ -240,7 +259,14 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 			const model = runtime.models.getModel(ref.provider, ref.modelId);
 			if (model === undefined) return failNoModel(runtime, ref, context);
 			await runtime.sleep(pollAt, context);
-			const message = await runtime.models.fetchDeferred(model, handle, { signal: runtime.signal });
+			const message = await observeModelAttempt(
+				runtime,
+				"generation",
+				model,
+				null,
+				() => runtime.models.fetchDeferred(model, handle, { signal: runtime.signal }),
+				context,
+			);
 			const request = { attempt, compacted, model: ref, cutoff, pollAt };
 			await classify(runtime, request, message, context);
 		},
@@ -284,6 +310,7 @@ export const GenerationTask = defineTask<GenerationInput, GenerationCheckpoint, 
 				: [];
 		await runtime.commit(async (tx) => {
 			const boundary = await prepareBoundary(tx, conversationId, runtime.settings);
+			await abortModelObservation(tx, conversationId, checkpoint, runtime.now());
 			const live = await tx.doc(LiveDoc, conversationId);
 			const ownsRun = live.run?.taskId === runtime.taskId;
 			await convertPartial(tx, live, conversationId);
@@ -488,10 +515,13 @@ async function classify(
 			runtime.now() + (handle.pollAfterMs ?? DEFAULT_POLL_AFTER_MS),
 			request.pollAt === undefined ? Number.NEGATIVE_INFINITY : request.pollAt + 1,
 		);
-		await runtime.commit(async (tx) => {
+		await runtime.commit(async (tx, currentTask) => {
 			(await tx.doc(LiveDoc, conversationId)).generation = { attempt, deferred: { pollAt } };
 			const checkpoint = {
 				phase: "poll",
+				...(currentTask.state.checkpoint.observationAttemptNo === undefined
+					? {}
+					: { observationAttemptNo: currentTask.state.checkpoint.observationAttemptNo }),
 				attempt,
 				...(compacted === undefined ? {} : { compacted }),
 				model: ref,
@@ -519,12 +549,20 @@ async function classify(
 		const view = await runtime.context(conversationId, context, { at: cutoff });
 		if (selectCut(view, policy.keepRecentTokens) !== undefined) {
 			const text = message.errorMessage ?? "Context overflow";
-			await runtime.commit(async (tx): Promise<Next> => {
+			await runtime.commit(async (tx, currentTask): Promise<Next> => {
 				const live = await tx.doc(LiveDoc, conversationId);
 				await appendAssistant(tx, conversationId, message);
 				delete live.generation;
 				const child = await createCompaction(tx, conversationId, { reason: "overflow" }, runtime.taskId);
-				const checkpoint = { phase: "prepare", attempt, compacted: child, overflow: text } as const;
+				const checkpoint = {
+					phase: "prepare",
+					attempt,
+					compacted: child,
+					overflow: text,
+					...(currentTask.state.checkpoint.observationAttemptNo === undefined
+						? {}
+						: { observationAttemptNo: currentTask.state.checkpoint.observationAttemptNo }),
+				} as const;
 				return { status: "waiting", checkpoint, on: [child], policy: "allSettled" };
 			}, context);
 			return;
@@ -545,7 +583,7 @@ async function classify(
 	const decision = modelRecovery(message, policy, attempt, retryable, fallback, index, failures);
 	const { retry, advance } = decision;
 	const until = retry ? runtime.now() + decision.delay : 0;
-	await runtime.commit(async (tx): Promise<Next> => {
+	await runtime.commit(async (tx, currentTask): Promise<Next> => {
 		const live = await tx.doc(LiveDoc, conversationId);
 		await appendAssistant(tx, conversationId, message);
 		await tx.appendEntry(conversationId, {
@@ -568,6 +606,9 @@ async function classify(
 			live.generation = { attempt, retry: { at: until, error: message.errorMessage ?? "" } };
 			const checkpoint = {
 				phase: "retry",
+				...(currentTask.state.checkpoint.observationAttemptNo === undefined
+					? {}
+					: { observationAttemptNo: currentTask.state.checkpoint.observationAttemptNo }),
 				attempt,
 				...(compacted === undefined ? {} : { compacted }),
 				until,
@@ -778,12 +819,20 @@ export async function startRun(
 	live: Draft<LiveState>,
 	inputs: SubmissionId[],
 ): Promise<void> {
-	live.run = { taskId: await createGeneration(tx, conversationId), inputs };
+	live.run = { taskId: await createGeneration(tx, conversationId, inputs[0]), inputs };
 }
 
 /** A generation owned by its conversation. */
-function createGeneration(tx: Tx, conversationId: ConversationId): Promise<TaskId<GenerationResult>> {
-	return tx.createTask(GenerationTask, {}, { ownership: { kind: "conversation" }, conversationId });
+async function createGeneration(
+	tx: Tx,
+	conversationId: ConversationId,
+	run?: SubmissionId,
+): Promise<TaskId<GenerationResult>> {
+	const modelRun = run ?? (await tx.doc(LiveDoc, conversationId)).run?.inputs[0];
+	return tx.createTask(GenerationTask, modelRun === undefined ? {} : { modelRun }, {
+		ownership: { kind: "conversation" },
+		conversationId,
+	});
 }
 
 /** Hand run control from `from` to `to`; the run's inputs move with it. */

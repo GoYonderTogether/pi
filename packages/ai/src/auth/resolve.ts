@@ -1,6 +1,8 @@
 import type { ProviderEnv } from "../types.ts";
 import { operationSignal, raceWithAbortSignal } from "../utils/abort.ts";
 import { ModelsError } from "../utils/models-error.ts";
+import { EXPLICIT_CREDENTIAL_ENV } from "../utils/provider-env.ts";
+import { credentialAuthContext } from "./context.ts";
 
 export { ModelsError, type ModelsErrorCode } from "../utils/models-error.ts";
 
@@ -38,7 +40,11 @@ export function resolveProviderAuth(
 ): Promise<AuthResult | undefined> {
 	const signal = operationSignal(overrides?.signal);
 	return raceWithAbortSignal(
-		resolveProviderAuthWithSignal(provider, credentials, authContext, overrides, signal),
+		resolveProviderAuthWithSignal(provider, credentials, authContext, overrides, signal).then((result) =>
+			result && authContext.credentialMode === "explicit"
+				? { ...result, env: { ...result.env, [EXPLICIT_CREDENTIAL_ENV]: "1" } }
+				: result,
+		),
 		signal,
 	);
 }
@@ -86,6 +92,19 @@ async function resolveProviderAuthWithSignal(
 		return undefined;
 	}
 
+	// A named binding must not become an ambient identity when its entry is missing.
+	if (authContext.credentialMode === "explicit") {
+		return overrides?.env && provider.auth.apiKey
+			? resolveApiKey(
+					requestAuthContext,
+					provider.auth.apiKey,
+					provider.id,
+					{ type: "api_key", env: overrides.env },
+					signal,
+				)
+			: undefined;
+	}
+
 	// Ambient (env vars, AWS profiles, ADC files).
 	return provider.auth.apiKey
 		? resolveApiKey(requestAuthContext, provider.auth.apiKey, provider.id, undefined, signal)
@@ -94,7 +113,8 @@ async function resolveProviderAuthWithSignal(
 
 function overlayEnvAuthContext(base: AuthContext, env: ProviderEnv): AuthContext {
 	return {
-		env: async (name) => env[name] || (await base.env(name)),
+		credentialMode: base.credentialMode,
+		env: async (name) => env[name] || (base.credentialMode === "explicit" ? undefined : await base.env(name)),
 		fileExists: (path) => base.fileExists(path),
 	};
 }
@@ -198,7 +218,7 @@ async function resolveApiKey(
 	signal: AbortSignal,
 ): Promise<AuthResult | undefined> {
 	try {
-		return await apiKey.resolve({ ctx: authContext, credential, signal });
+		return await apiKey.resolve({ ctx: credentialAuthContext(authContext, credential), credential, signal });
 	} catch (error) {
 		throw new ModelsError("auth", `API key auth failed for provider ${providerId}`, { cause: error });
 	}

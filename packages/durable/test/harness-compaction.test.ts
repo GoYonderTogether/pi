@@ -24,6 +24,7 @@ import {
 	type Harness,
 	LiveDoc,
 	MemoryStorage,
+	ModelObservationEntry,
 	ProviderDoc,
 	type TaskId,
 	UsageDoc,
@@ -33,7 +34,16 @@ import { afterEach, describe, expect, it } from "vitest";
 import { selectCut, serializeConversation } from "../src/harness/compaction.ts";
 import { orderToolResults } from "../src/harness/context.ts";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
-import { allEntries, type ChatSetup, chatSetup, openChat, textOf, toolsNamed, waitFor } from "./chat-support.ts";
+import {
+	transcriptEntries as allEntries,
+	type ChatSetup,
+	chatSetup,
+	openChat,
+	allEntries as rawEntries,
+	textOf,
+	toolsNamed,
+	waitFor,
+} from "./chat-support.ts";
 import { addHooks, addSection, addTask, addTool } from "./harness-support.ts";
 import { ControlledStorage, context } from "./session-support.ts";
 import { aborted, type Deferred, deferred } from "./task-support.ts";
@@ -775,13 +785,9 @@ describe("compaction outcomes", () => {
 		expect(chat.setup.reports).toEqual([expect.objectContaining({ message: "hook broke" })]);
 		const compaction = seen[0] as { entries: EntryRecord[]; messages: Message[]; firstKept: number };
 		expect(compaction).toMatchObject({ reason: "manual", instructions: "why" });
-		expect(compaction.entries.map((record) => record.kind)).toEqual([
-			"pi.user",
-			"pi.system",
-			"pi.assistant",
-			"pi.user",
-			"pi.assistant",
-		]);
+		expect(
+			compaction.entries.filter((record) => record.kind !== "pi.model-observation").map((record) => record.kind),
+		).toEqual(["pi.user", "pi.system", "pi.assistant", "pi.user", "pi.assistant"]);
 		expect(compaction.messages.filter((message) => message.role !== "system").map(userText)).toEqual([
 			text("u1", 100),
 			text("a1", 100),
@@ -849,6 +855,19 @@ describe("compaction outcomes", () => {
 		});
 		expect(chat.faux.summaryRequests).toHaveLength(2);
 		expect(twice).toBe(2 * once);
+		const observations = (await rawEntries(chat.root))
+			.filter(ModelObservationEntry.is)
+			.map((entry) => entry.data!)
+			.filter((data) => data.operation === "compaction");
+		expect(observations.map((data) => [data.phase, data.attemptNo])).toEqual([
+			["start", 1],
+			["end", 1],
+			["start", 2],
+			["end", 2],
+		]);
+		expect(observations[0]!.attemptId).not.toBe(observations[2]!.attemptId);
+		expect(observations[1]!.status).toBe("error");
+		expect(observations[3]!.status).toBe("stop");
 		const sessionId = (await chat.harness.snapshot(ProviderDoc, chat.root.id, context))!.sessionId;
 		for (const request of chat.faux.summaryRequests) {
 			expect(request.options).toMatchObject({
@@ -1733,6 +1752,16 @@ describe("compaction recovery", () => {
 		const usage = (await chat.harness.snapshot(UsageDoc, chat.root.id, context))!.models["faux/faux-1"]!;
 		expect(usage.input).toBeGreaterThan(usageBefore.input);
 		expect(usage.output - usageBefore.output).toBe(2);
+		const observations = (await rawEntries(chat.root))
+			.filter(ModelObservationEntry.is)
+			.map((entry) => entry.data!)
+			.filter((data) => data.operation === "compaction");
+		expect(observations.map((data) => [data.phase, data.attemptNo])).toEqual([
+			["start", 1],
+			["start", 2],
+			["end", 2],
+		]);
+		expect(observations[0]!.attemptId).not.toBe(observations[1]!.attemptId);
 		await chat.harness.close(context);
 	});
 

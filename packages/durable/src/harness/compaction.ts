@@ -10,6 +10,7 @@ import type {
 	EntryId,
 	NextTaskState,
 	RunningTask,
+	SubmissionId,
 	TaskId,
 	TaskRuntime,
 	Tx,
@@ -23,6 +24,7 @@ import {
 	type LiveState,
 	removeCompactionStatus,
 } from "./live.ts";
+import { abortModelObservation, type ObservationCheckpoint, observeModelAttempt } from "./model-observation.ts";
 import { modelRecovery } from "./model-recovery.ts";
 import { ensureProviderSessionId } from "./provider.ts";
 import { admitSubmission } from "./submissions.ts";
@@ -36,10 +38,10 @@ import type {
 } from "./types.ts";
 import { recordUsage } from "./usage.ts";
 
-export type CompactionInput = { reason: CompactionReason; instructions?: string };
+export type CompactionInput = { reason: CompactionReason; instructions?: string; modelRun?: SubmissionId };
 
 /** The pinned summarization request. */
-export type SummaryRequest = {
+export type SummaryRequest = ObservationCheckpoint & {
 	attempt: number;
 	/** Total attempts across models, for the same backoff as generation. Older checkpoints use attempt. */
 	totalAttempt?: number;
@@ -54,10 +56,12 @@ export type SummaryRequest = {
 	firstKept: EntryId;
 };
 
-export type CompactionCheckpoint =
-	| { phase: "select" }
-	| ({ phase: "summarize" } & SummaryRequest)
-	| ({ phase: "retry"; until: number } & SummaryRequest);
+export type CompactionCheckpoint = ObservationCheckpoint &
+	(
+		| { phase: "select" }
+		| ({ phase: "summarize" } & SummaryRequest)
+		| ({ phase: "retry"; until: number } & SummaryRequest)
+	);
 
 type Runtime = TaskRuntime<CompactionInput, CompactionCheckpoint, CompactionResult, CompactionHooks>;
 type Next = NextTaskState<CompactionCheckpoint, CompactionResult>;
@@ -185,7 +189,14 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 				sessionId: await ensureProviderSessionId(runtime, context),
 				...(thinkingLevel === "off" ? {} : { reasoning: thinkingLevel }),
 			};
-			const message = await runtime.models.completeSimple(model, { messages }, options);
+			const message = await observeModelAttempt(
+				runtime,
+				"compaction",
+				model,
+				thinkingLevel,
+				() => runtime.models.completeSimple(model, { messages }, options),
+				context,
+			);
 			// An abort mark or close: the abort invocation or the reopened task handles the committed state.
 			runtime.signal.throwIfAborted();
 			const summary = summaryText(message);
@@ -232,10 +243,12 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 					if (status !== undefined) status.retry = { at: until, error: message.errorMessage ?? "" };
 					if (advance && current.owner !== undefined && live.run)
 						live.run.modelFallback = { index: index + 2, failures: 0 };
+					const { observationStart: _start, ...pinned } = request;
+					const observed = { ...pinned, observationAttemptNo: current.state.checkpoint.observationAttemptNo! };
 					const next =
 						advance && nextModel !== undefined
 							? {
-									...request,
+									...observed,
 									model: nextModel,
 									attempt: 0,
 									maxTokens: Math.min(
@@ -243,7 +256,7 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 										runtime.models.getModel(nextModel.provider, nextModel.modelId)?.maxTokens || maxTokens,
 									),
 								}
-							: request;
+							: observed;
 					return { status: "running", checkpoint: { phase: "retry", ...next, totalAttempt, until } };
 				}
 				const text =
@@ -277,8 +290,10 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 			}, context);
 		},
 	},
-	abort: async (_task, runtime, context) => {
+	abort: async (task, runtime, context) => {
 		await runtime.commit(async (tx) => {
+			if (task.state.checkpoint.phase !== "select")
+				await abortModelObservation(tx, runtime.conversationId, task.state.checkpoint, runtime.now());
 			removeCompactionStatus(await tx.doc(LiveDoc, runtime.conversationId), runtime.taskId);
 			return { status: "terminal", outcome: { status: "aborted" } };
 		}, context);
@@ -298,7 +313,12 @@ export async function createCompaction(
 	const ownership =
 		owner === undefined ? ({ kind: "conversation" } as const) : { kind: "task" as const, taskId: owner };
 	const background = owner === undefined && input.reason !== "manual";
-	const taskId = await tx.createTask(CompactionTask, input, { ownership, conversationId, background });
+	const modelRun = (await tx.doc(LiveDoc, conversationId)).run?.inputs[0];
+	const taskId = await tx.createTask(
+		CompactionTask,
+		{ ...input, ...(modelRun === undefined ? {} : { modelRun }) },
+		{ ownership, conversationId, background },
+	);
 	const status = { taskId, reason: input.reason, blocking: owner !== undefined, attempt: 1 };
 	addCompactionStatus(await tx.doc(LiveDoc, conversationId), status);
 	return taskId;

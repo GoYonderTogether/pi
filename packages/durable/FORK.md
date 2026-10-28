@@ -4,14 +4,14 @@ Source: https://github.com/GoYonderTogether/pi/tree/yonder/1.3/packages/durable
 Base: earendil-works/pi tag v1.3.0 (71023aec1546d6d677a65669c5665c0927ce0dd0).
 MIT license and upstream copyright are retained.
 
-Only packages/durable is modified:
+The fork modifies packages/durable and, for T61 stream observation and T63 explicit credential isolation, packages/ai:
 
 - D28: beforeAgent host callback before task agent resolution; abort of one run continues queued inputs at the native final boundary.
 - D29: RunReceiptDoc records inputs, settlement and ending usage in the same transaction that settles the run.
 - D49: steer interrupts generation without cancelling tools; explicit interrupt cancels the active ownership scope and resumes the same run with queued inputs. Final-answer commits consume pending steers before settling, retaining superseded text as aborted history.
 - D44: shouldRetry generation hook overrides classification while native overflow/abort checks, retry budget and persisted deadlines remain authoritative. Exhaustion includes the retry count and final provider error.
 
-pi-ai 1.3.0 already caps retryDelayMs via maxAgentDelayMs; durable forwards this setting. Yonder maps yonder.yaml retry.maxDelayMs to it. No pi-ai fork is needed. chord, pi-ai and codemode stay upstream npm dependencies in the Yonder workspace.
+pi-ai 1.3.0 already caps retryDelayMs via maxAgentDelayMs; durable forwards this setting. Yonder maps yonder.yaml retry.maxDelayMs to it. For the existing retry cap no pi-ai fork is needed. chord and codemode stay pinned upstream npm dependencies. These T61/T63 durable changes require the matching pi-ai fork artifact; syncing durable alone while keeping upstream pi-ai 1.3.0 is not a complete integration. A Yonder source release may bundle an integrity-pinned pi-ai tarball while retaining its actual upstream-derived package name/version, with exact fork provenance, without publishing a new npm version.
 
 New tests use authenticated loopback HTTP failures, never synthetic model streams. Existing upstream tests and helpers are retained; exhaustion detail and abort-boundary inbox/compaction assertions reflect the fork's changed behavior.
 
@@ -72,3 +72,28 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 Optional compaction.backgroundAtTokens caps the background start threshold independently of the model context window; smaller models keep their earlier native thresholds.
+
+## T61 client model observations (unpublished)
+
+`AssistantMessage.observation?` is a version-1 sidecar; legacy numeric Usage and durationMs are unchanged.
+Times are client monotonic milliseconds from stream creation. Nonempty text/thinking/toolcall deltas have independent
+first/last/count fields; counts are chunks, never tokens. Start, empty delta, tool start and usage-only events do not
+count as effective output. Previously timed/deferred/forwarded messages are not retimed.
+OpenAI Responses/Completions and Anthropic Messages capture reported usage presence before numeric defaults,
+requested/clamped/wire effort, and reported model. Missing counts stay null/unknown, not reported zero.
+Wire values are allowlisted snapshots after payload callbacks, not server-actual effort.
+Account slots, rate snapshots, HTTP headers/provider/body timing and server-actual effort remain null/unsupported.
+
+`pi.model-observation` is a non-model native entry, one start and at most one end per network invocation, including
+compaction and deferred fetch. A logical request is a native task ID; each network invocation gets a UUID and a
+checkpointed attempt number, independent of scheduler retry budgets. Start persists before invocation; normal/throw
+end clears its active checkpoint pointer. Explicit abort writes end in its existing native abort transaction with
+unknown elapsed/usage if unavailable. Close/crash leaves the start unended; only the exporter labels it interrupted.
+Observation code never schedules a retry or adds usage, and existing pi.model-attempt diagnostics remain unchanged.
+Sidecar times and durable attempt elapsed have different client start boundaries; do not subtract them or call either
+server decode timing. Deferred results retain their originating sidecar, not a newly timed polling stream.
+
+Source packages retain version 1.3.0 here: no publish or dependency version bump is implied. The upstream lockstep
+package artifact flow is `scripts/pack-packages.mjs` followed by `scripts/use-local-packages.mjs` for an isolated
+consumer; production consumption needs a separately approved coherent fork release/dependency update. Syncing this
+commit into Yonder vendors only durable and continues resolving npm pi-ai 1.3.0 until that separate integration.

@@ -5,7 +5,15 @@ import { type AssistantMessage, createModels, fauxAssistantMessage, type Message
 import { AssistantEntry, type Harness, LiveDoc, type TaskId } from "@earendil-works/pi-durable";
 import { afterEach, describe, expect, it } from "vitest";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
-import { allEntries, type ChatSetup, chatSetup, openChat, textOf, unanswered, waitFor } from "./chat-support.ts";
+import {
+	transcriptEntries as allEntries,
+	type ChatSetup,
+	chatSetup,
+	openChat,
+	textOf,
+	unanswered,
+	waitFor,
+} from "./chat-support.ts";
 import { addSection } from "./harness-support.ts";
 import { context } from "./session-support.ts";
 import { aborted, deferred } from "./task-support.ts";
@@ -182,7 +190,12 @@ describe("generation recovery", () => {
 		await opened.harness.close(context);
 
 		opened = await open(path, setup);
-		expect(await checkpoint(opened.harness, taskId)).toEqual({ phase: "retry", attempt: 1, until: 61_000 });
+		expect(await checkpoint(opened.harness, taskId)).toEqual({
+			phase: "retry",
+			attempt: 1,
+			until: 61_000,
+			observationAttemptNo: 1,
+		});
 		expect(await opened.harness.snapshot(LiveDoc, opened.root.id, context)).toEqual({
 			run: { taskId, inputs: [id] },
 			generation: { attempt: 1, retry: { at: 61_000, error: "503 Service Unavailable" } },

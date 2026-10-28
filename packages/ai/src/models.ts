@@ -1,5 +1,5 @@
 import { lazyStream } from "./api/lazy.ts";
-import { defaultProviderAuthContext as defaultAuthContext } from "./auth/context.ts";
+import { credentialAuthContext, defaultProviderAuthContext as defaultAuthContext } from "./auth/context.ts";
 import { InMemoryCredentialStore } from "./auth/credential-store.ts";
 import {
 	type AuthResolutionOverrides,
@@ -373,7 +373,7 @@ export interface MutableModels extends Models {
 export interface CreateModelsOptions {
 	credentials?: CredentialStore;
 	modelsStore?: ModelsStore;
-	authContext?: AuthContext;
+	authContext?: AuthContext | ((providerId: string) => AuthContext);
 }
 
 function mergeHeaders(
@@ -396,7 +396,7 @@ class ModelsImpl implements MutableModels {
 	private providers = new Map<string, Provider>();
 	private credentials: CredentialStore;
 	private modelsStore: ModelsStore;
-	private authContext: AuthContext;
+	private authContext: AuthContext | ((providerId: string) => AuthContext);
 	private refreshGenerations = new Map<string, number>();
 	private refreshControllers = new Map<string, AbortController>();
 	private publicationChains = new Map<string, Promise<unknown>>();
@@ -405,6 +405,10 @@ class ModelsImpl implements MutableModels {
 		this.credentials = options?.credentials ?? new InMemoryCredentialStore();
 		this.modelsStore = options?.modelsStore ?? new InMemoryModelsStore();
 		this.authContext = options?.authContext ?? defaultAuthContext();
+	}
+
+	private contextFor(providerId: string): AuthContext {
+		return typeof this.authContext === "function" ? this.authContext(providerId) : this.authContext;
 	}
 
 	setProvider(provider: Provider): void {
@@ -641,7 +645,11 @@ class ModelsImpl implements MutableModels {
 		const apiKey = provider.auth.apiKey;
 		if (!apiKey) return undefined;
 		const credential = stored?.type === "api_key" ? stored : undefined;
-		const result = await apiKey.resolve({ ctx: this.authContext, credential, signal });
+		const result = await apiKey.resolve({
+			ctx: credentialAuthContext(this.contextFor(provider.id), credential),
+			credential,
+			signal,
+		});
 		if (!result) return undefined;
 		return { type: "api_key", key: result.auth.apiKey, env: result.env };
 	}
@@ -667,7 +675,10 @@ class ModelsImpl implements MutableModels {
 		if (apiKey.check) {
 			try {
 				return await apiKey.check({
-					ctx: this.authContext,
+					ctx: credentialAuthContext(
+						this.contextFor(provider.id),
+						credential?.type === "api_key" ? credential : undefined,
+					),
 					credential: credential?.type === "api_key" ? credential : undefined,
 					signal,
 				});
@@ -676,7 +687,9 @@ class ModelsImpl implements MutableModels {
 			}
 		}
 
-		const resolution = await resolveProviderAuth(provider, this.credentials, this.authContext, { signal });
+		const resolution = await resolveProviderAuth(provider, this.credentials, this.contextFor(provider.id), {
+			signal,
+		});
 		return resolution ? { source: resolution.source, type: "api_key" } : undefined;
 	}
 
@@ -754,7 +767,10 @@ class ModelsImpl implements MutableModels {
 		const providerId = typeof providerOrModel === "string" ? providerOrModel : providerOrModel.provider;
 		const provider = this.providers.get(providerId);
 		if (!provider) return undefined;
-		const result = await resolveProviderAuth(provider, this.credentials, this.authContext, { ...overrides, signal });
+		const result = await resolveProviderAuth(provider, this.credentials, this.contextFor(provider.id), {
+			...overrides,
+			signal,
+		});
 		if (!result || typeof providerOrModel === "string" || !providerOrModel.headers) return result;
 		return {
 			...result,

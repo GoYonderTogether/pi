@@ -1,0 +1,174 @@
+
+ RUN  v4.1.11 /Users/zoran/Documents/github/yonder-pi-1.4/packages/durable
+
+ ❯ test/codemode.test.ts (0 test)
+ ❯ test/harness-tools.test.ts (0 test)
+ ❯ test/harness-structured.test.ts (0 test)
+ ❯ test/harness-nested-tools.test.ts (0 test)
+ ❯ test/harness-inbox.test.ts (0 test)
+ ❯ test/harness-context.test.ts (0 test)
+ ❯ test/harness-compaction.test.ts (0 test)
+ ❯ test/harness-ownership.test.ts (0 test)
+ ❯ test/harness-tasks.test.ts (0 test)
+ ❯ test/harness-generation.test.ts (0 test)
+ ❯ test/tools.test.ts (0 test)
+ ❯ test/jsonl-storage.test.ts (0 test)
+ ❯ test/harness-tasks-recovery.test.ts (0 test)
+ ❯ test/session-checkpoints-migrations.test.ts (0 test)
+ ❯ test/harness-telemetry.test.ts (0 test)
+ ❯ test/env-node.test.ts (0 test)
+ ❯ test/session-forks.test.ts (0 test)
+ ❯ test/session-documents.test.ts (0 test)
+ ❯ test/harness-scheduler-retention.test.ts (0 test)
+ ❯ test/sqlite-storage.test.ts (0 test)
+ ❯ test/session-document-retention.test.ts (0 test)
+ ❯ test/harness-lifecycle.test.ts (0 test)
+ ❯ test/tools-images.test.ts (0 test)
+ ❯ test/harness-events.test.ts (0 test)
+ ❯ test/harness-blocked.test.ts (0 test)
+ ❯ test/harness-nested-tools-restart.test.ts (0 test)
+ ❯ test/harness-storage-failure.test.ts (0 test)
+ ❯ test/harness-conversations.test.ts (0 test)
+ ❯ test/harness-input-entries.test.ts (0 test)
+ ❯ test/harness-structured-output.test.ts (0 test)
+ ❯ test/session-watches.test.ts (0 test)
+ ❯ test/spec-usage.test.ts (0 test)
+ ❯ test/harness-sleep.test.ts (0 test)
+ ❯ test/harness-view.test.ts (0 test)
+ ❯ test/harness-live-deltas.test.ts (0 test)
+ ❯ test/session-tables.test.ts (0 test)
+ ❯ test/harness-models-resolver.test.ts (0 test)
+ ❯ test/harness-task-graph.test.ts (0 test)
+ ❯ test/harness-registry.test.ts (0 test)
+ ❯ test/harness-tools-recovery.test.ts (0 test)
+ ❯ test/env-node-local-spawn.test.ts (0 test)
+ ❯ test/harness-generation-recovery.test.ts (0 test)
+ ❯ test/harness-scheduler-indexes.test.ts (0 test)
+ ❯ test/types.test.ts (0 test)
+ ❯ test/harness-submissions.test.ts (0 test)
+ ❯ test/indexeddb-storage.test.ts (0 test)
+ ❯ test/codemode-models.test.ts (0 test)
+ ❯ test/session-definitions.test.ts (0 test)
+ ❯ test/harness-cancellation-barrier.test.ts (0 test)
+ ❯ test/harness-prompt.test.ts (0 test)
+ ❯ test/session-states.test.ts (0 test)
+ ❯ test/sqlite-facade.test.ts (0 test)
+ ❯ test/tool-search.test.ts (0 test)
+ ❯ test/model-observation.test.ts (0 test)
+ ❯ test/yonder-fork.test.ts (0 test)
+ ❯ test/harness-callers.test.ts (0 test)
+ ❯ test/system-order-cache-e2e.test.ts (0 test)
+ ❯ test/harness-reports.test.ts (0 test)
+ ❯ test/sqlite-migrations.test.ts (0 test)
+ ❯ test/harness-inspect.test.ts (0 test)
+ ❯ test/tools-read-differential.test.ts (0 test)
+ ❯ test/env-node-conformance.test.ts (0 test)
+ ❯ test/codemode-describe.test.ts (0 test)
+ ❯ test/provider-session-cache-e2e.test.ts (0 test)
+ ❯ test/harness-host-inputs.test.ts (0 test)
+ ❯ test/env-line-scan.test.ts (0 test)
+ ❯ test/env-truncate.test.ts (0 test)
+ ❯ test/sqlite-cloudflare.test.ts (0 test)
+ ❯ test/codemode-checkpoints.test.ts (0 test)
+ ❯ test/harness-failed-run-inbox.test.ts (0 test)
+ ❯ test/storage-runtime-boundary.test.ts (0 test)
+ ❯ test/env-node-spill.test.ts (0 test)
+ ❯ test/search-relevance.test.ts (0 test)
+ ❯ test/memory-storage.test.ts (0 test)
+ ❯ test/harness-telemetry-options.test.ts (0 test)
+ ❯ test/images-wasm-module.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 76 ⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/codemode-checkpoints.test.ts [ test/codemode-checkpoints.test.ts ]
+ FAIL  test/codemode-describe.test.ts [ test/codemode-describe.test.ts ]
+ FAIL  test/codemode-models.test.ts [ test/codemode-models.test.ts ]
+ FAIL  test/codemode.test.ts [ test/codemode.test.ts ]
+ FAIL  test/env-line-scan.test.ts [ test/env-line-scan.test.ts ]
+ FAIL  test/env-node-conformance.test.ts [ test/env-node-conformance.test.ts ]
+ FAIL  test/env-node-local-spawn.test.ts [ test/env-node-local-spawn.test.ts ]
+ FAIL  test/env-node-spill.test.ts [ test/env-node-spill.test.ts ]
+ FAIL  test/env-node.test.ts [ test/env-node.test.ts ]
+ FAIL  test/env-truncate.test.ts [ test/env-truncate.test.ts ]
+ FAIL  test/harness-blocked.test.ts [ test/harness-blocked.test.ts ]
+ FAIL  test/harness-callers.test.ts [ test/harness-callers.test.ts ]
+ FAIL  test/harness-cancellation-barrier.test.ts [ test/harness-cancellation-barrier.test.ts ]
+ FAIL  test/harness-compaction.test.ts [ test/harness-compaction.test.ts ]
+ FAIL  test/harness-context.test.ts [ test/harness-context.test.ts ]
+ FAIL  test/harness-conversations.test.ts [ test/harness-conversations.test.ts ]
+ FAIL  test/harness-events.test.ts [ test/harness-events.test.ts ]
+ FAIL  test/harness-failed-run-inbox.test.ts [ test/harness-failed-run-inbox.test.ts ]
+ FAIL  test/harness-generation-recovery.test.ts [ test/harness-generation-recovery.test.ts ]
+ FAIL  test/harness-generation.test.ts [ test/harness-generation.test.ts ]
+ FAIL  test/harness-host-inputs.test.ts [ test/harness-host-inputs.test.ts ]
+ FAIL  test/harness-inbox.test.ts [ test/harness-inbox.test.ts ]
+ FAIL  test/harness-input-entries.test.ts [ test/harness-input-entries.test.ts ]
+ FAIL  test/harness-inspect.test.ts [ test/harness-inspect.test.ts ]
+ FAIL  test/harness-lifecycle.test.ts [ test/harness-lifecycle.test.ts ]
+ FAIL  test/harness-live-deltas.test.ts [ test/harness-live-deltas.test.ts ]
+ FAIL  test/harness-models-resolver.test.ts [ test/harness-models-resolver.test.ts ]
+ FAIL  test/harness-nested-tools-restart.test.ts [ test/harness-nested-tools-restart.test.ts ]
+ FAIL  test/harness-nested-tools.test.ts [ test/harness-nested-tools.test.ts ]
+ FAIL  test/harness-ownership.test.ts [ test/harness-ownership.test.ts ]
+ FAIL  test/harness-prompt.test.ts [ test/harness-prompt.test.ts ]
+ FAIL  test/harness-registry.test.ts [ test/harness-registry.test.ts ]
+ FAIL  test/harness-reports.test.ts [ test/harness-reports.test.ts ]
+ FAIL  test/harness-scheduler-indexes.test.ts [ test/harness-scheduler-indexes.test.ts ]
+ FAIL  test/harness-scheduler-retention.test.ts [ test/harness-scheduler-retention.test.ts ]
+ FAIL  test/harness-sleep.test.ts [ test/harness-sleep.test.ts ]
+ FAIL  test/harness-storage-failure.test.ts [ test/harness-storage-failure.test.ts ]
+ FAIL  test/harness-structured-output.test.ts [ test/harness-structured-output.test.ts ]
+ FAIL  test/harness-structured.test.ts [ test/harness-structured.test.ts ]
+ FAIL  test/harness-submissions.test.ts [ test/harness-submissions.test.ts ]
+ FAIL  test/harness-task-graph.test.ts [ test/harness-task-graph.test.ts ]
+ FAIL  test/harness-tasks-recovery.test.ts [ test/harness-tasks-recovery.test.ts ]
+ FAIL  test/harness-tasks.test.ts [ test/harness-tasks.test.ts ]
+ FAIL  test/harness-telemetry-options.test.ts [ test/harness-telemetry-options.test.ts ]
+ FAIL  test/harness-telemetry.test.ts [ test/harness-telemetry.test.ts ]
+ FAIL  test/harness-tools-recovery.test.ts [ test/harness-tools-recovery.test.ts ]
+ FAIL  test/harness-tools.test.ts [ test/harness-tools.test.ts ]
+ FAIL  test/harness-view.test.ts [ test/harness-view.test.ts ]
+ FAIL  test/images-wasm-module.test.ts [ test/images-wasm-module.test.ts ]
+ FAIL  test/indexeddb-storage.test.ts [ test/indexeddb-storage.test.ts ]
+ FAIL  test/jsonl-storage.test.ts [ test/jsonl-storage.test.ts ]
+ FAIL  test/memory-storage.test.ts [ test/memory-storage.test.ts ]
+ FAIL  test/model-observation.test.ts [ test/model-observation.test.ts ]
+ FAIL  test/provider-session-cache-e2e.test.ts [ test/provider-session-cache-e2e.test.ts ]
+ FAIL  test/search-relevance.test.ts [ test/search-relevance.test.ts ]
+ FAIL  test/session-checkpoints-migrations.test.ts [ test/session-checkpoints-migrations.test.ts ]
+ FAIL  test/session-definitions.test.ts [ test/session-definitions.test.ts ]
+ FAIL  test/session-document-retention.test.ts [ test/session-document-retention.test.ts ]
+ FAIL  test/session-documents.test.ts [ test/session-documents.test.ts ]
+ FAIL  test/session-forks.test.ts [ test/session-forks.test.ts ]
+ FAIL  test/session-states.test.ts [ test/session-states.test.ts ]
+ FAIL  test/session-tables.test.ts [ test/session-tables.test.ts ]
+ FAIL  test/session-watches.test.ts [ test/session-watches.test.ts ]
+ FAIL  test/spec-usage.test.ts [ test/spec-usage.test.ts ]
+ FAIL  test/sqlite-cloudflare.test.ts [ test/sqlite-cloudflare.test.ts ]
+ FAIL  test/sqlite-facade.test.ts [ test/sqlite-facade.test.ts ]
+ FAIL  test/sqlite-migrations.test.ts [ test/sqlite-migrations.test.ts ]
+ FAIL  test/sqlite-storage.test.ts [ test/sqlite-storage.test.ts ]
+ FAIL  test/storage-runtime-boundary.test.ts [ test/storage-runtime-boundary.test.ts ]
+ FAIL  test/system-order-cache-e2e.test.ts [ test/system-order-cache-e2e.test.ts ]
+ FAIL  test/tool-search.test.ts [ test/tool-search.test.ts ]
+ FAIL  test/tools-images.test.ts [ test/tools-images.test.ts ]
+ FAIL  test/tools-read-differential.test.ts [ test/tools-read-differential.test.ts ]
+ FAIL  test/tools.test.ts [ test/tools.test.ts ]
+ FAIL  test/types.test.ts [ test/types.test.ts ]
+ FAIL  test/yonder-fork.test.ts [ test/yonder-fork.test.ts ]
+Error: Failed to resolve entry for package "@earendil-works/pi-telemetry". The package may have incorrect main/module/exports specified in its package.json.
+ ❯ ../chord/src/context/index.ts:1:1
+      1| import { NOOP_TELEMETRY_CONTEXT, type SpanOptions, type TelemetrySpan …
+       | ^
+      2|
+      3| /** Typed identity for one value carried by a {@link Context}. */
+ ❯ ../chord/src/state.ts:6:1
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/76]⎯
+
+
+ Test Files  76 failed (76)
+      Tests  no tests
+   Start at  13:02:50
+   Duration  3.42s (transform 1.45s, setup 0ms, import 0ms, tests 0ms, environment 5ms)
+

@@ -1,0 +1,28 @@
+{
+  "id": "b12ce1446",
+  "name": "构建测试守护进程",
+  "command": "cd /Users/zoran/Documents/github/yonder-pi-1.4/packages/env && npm run build:daemon",
+  "status": "killed",
+  "outputPath": ".pi/tasks/01a17e48-2113-7311-b76d-fe77d0cb5edc-54648/b12ce1446.output",
+  "cwd": "/Users/zoran/Documents/github/yonder-pi",
+  "startTime": 1793121236883,
+  "endTime": 1793121243892,
+  "exitCode": null,
+  "signal": "SIGTERM",
+  "pid": 92733,
+  "bytesWritten": 132,
+  "isAgent": false,
+  "surviveReload": false,
+  "error": "Killed during Pi session shutdown (quit)",
+  "notified": false,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "shellPolicy": {
+    "policy": "inherit",
+    "executable": "/bin/zsh",
+    "argvPrefix": [
+      "-c"
+    ],
+    "dialect": "posix"
+  }
+}

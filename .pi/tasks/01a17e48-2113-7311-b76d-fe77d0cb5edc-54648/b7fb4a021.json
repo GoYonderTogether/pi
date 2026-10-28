@@ -1,0 +1,28 @@
+{
+  "id": "b7fb4a021",
+  "name": "测试 durable 套件",
+  "command": "cd /Users/zoran/Documents/github/yonder-pi-1.4/packages/durable && node ../../node_modules/vitest/dist/cli.js --run",
+  "status": "failed",
+  "outputPath": ".pi/tasks/01a17e48-2113-7311-b76d-fe77d0cb5edc-54648/b7fb4a021.output",
+  "cwd": "/Users/zoran/Documents/github/yonder-pi",
+  "startTime": 1793120569836,
+  "endTime": 1793120574092,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 65499,
+  "bytesWritten": 9846,
+  "isAgent": false,
+  "surviveReload": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "shellPolicy": {
+    "policy": "inherit",
+    "executable": "/bin/zsh",
+    "argvPrefix": [
+      "-c"
+    ],
+    "dialect": "posix"
+  }
+}

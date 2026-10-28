@@ -1,0 +1,28 @@
+{
+  "id": "b9d64a35d",
+  "name": "安装隔离工作树依赖",
+  "command": "cd /Users/zoran/Documents/github/yonder-pi-1.4 && /Users/zoran/.local/bin/agent-network run -- npm ci --ignore-scripts",
+  "status": "completed",
+  "outputPath": ".pi/tasks/01a17e48-2113-7311-b76d-fe77d0cb5edc-36350/b9d64a35d.output",
+  "cwd": "/Users/zoran/Documents/github/yonder-pi",
+  "startTime": 1793120143380,
+  "endTime": 1793120169613,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 47202,
+  "bytesWritten": 1539,
+  "isAgent": false,
+  "surviveReload": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200,
+  "shellPolicy": {
+    "policy": "inherit",
+    "executable": "/bin/zsh",
+    "argvPrefix": [
+      "-c"
+    ],
+    "dialect": "posix"
+  }
+}

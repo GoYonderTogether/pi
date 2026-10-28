@@ -1,0 +1,58 @@
+
+> pi-monorepo@0.0.3 build:offline
+> cd packages/telemetry && npm run build && cd ../chord && npm run build && cd ../tui && npm run build && cd ../codemode && npm run build && cd ../mcp && npm run build && cd ../ai && npm run build:offline && cd ../durable && npm run build && cd ../env && npm run build && cd ../agent && npm run build && cd ../coding-agent && npm run build
+
+
+> @earendil-works/pi-telemetry@1.4.0 build
+> tsc -p tsconfig.build.json
+
+
+> @earendil-works/chord@1.4.0 build
+> tsc -p tsconfig.build.json
+
+
+> @earendil-works/pi-tui@1.4.0 build
+> tsc -p tsconfig.build.json
+
+
+> @earendil-works/pi-codemode@1.4.0 build
+> tsc -p tsconfig.build.json
+
+
+> @earendil-works/pi-mcp@1.4.0 build
+> tsc -p tsconfig.build.json
+
+
+> @earendil-works/pi-ai@1.4.0 build:offline
+> npm run check:model-data && tsc -p tsconfig.build.json && shx rm -rf dist/providers/data && shx cp -r src/providers/data dist/providers/data
+
+
+> @earendil-works/pi-ai@1.4.0 check:model-data
+> node scripts/check-model-data.ts
+
+Generated model data is valid.
+
+> @earendil-works/pi-durable@1.4.0 build
+> tsc -p tsconfig.build.json
+
+
+> @earendil-works/pi-env@1.4.0 build
+> tsc -p tsconfig.build.json
+
+
+> @earendil-works/pi-agent-core@1.4.0 build
+> tsc -p tsconfig.build.json
+
+
+> @earendil-works/pi-coding-agent@1.4.0 build
+> npm run build:unbundled && node ../../scripts/build-coding-agent-bundle.mjs
+
+
+> @earendil-works/pi-coding-agent@1.4.0 build:unbundled
+> tsc -p tsconfig.build.json && shx chmod +x dist/cli.js dist/rpc-entry.js && npm run copy-assets
+
+
+> @earendil-works/pi-coding-agent@1.4.0 copy-assets
+> shx mkdir -p dist/modes/interactive/theme && shx cp src/modes/interactive/theme/*.json dist/modes/interactive/theme/ && shx mkdir -p dist/modes/interactive/assets && shx cp src/modes/interactive/assets/*.png dist/modes/interactive/assets/ && shx mkdir -p dist/core/export-html/vendor && shx cp src/core/export-html/template.html src/core/export-html/template.css src/core/export-html/template.js dist/core/export-html/ && shx cp src/core/export-html/vendor/*.js dist/core/export-html/vendor/
+
+Built packages/coding-agent/dist/bundle (80 files, 8.8 MiB)

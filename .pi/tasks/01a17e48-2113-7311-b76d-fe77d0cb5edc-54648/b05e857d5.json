@@ -1,0 +1,28 @@
+{
+  "id": "b05e857d5",
+  "name": "重跑隔离测试",
+  "command": "cd /Users/zoran/Documents/github/yonder-pi-1.4 && ./test.sh",
+  "status": "failed",
+  "outputPath": ".pi/tasks/01a17e48-2113-7311-b76d-fe77d0cb5edc-54648/b05e857d5.output",
+  "cwd": "/Users/zoran/Documents/github/yonder-pi",
+  "startTime": 1793120926359,
+  "endTime": 1793121010455,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 80962,
+  "bytesWritten": 252319,
+  "isAgent": false,
+  "surviveReload": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "shellPolicy": {
+    "policy": "inherit",
+    "executable": "/bin/zsh",
+    "argvPrefix": [
+      "-c"
+    ],
+    "dialect": "posix"
+  }
+}

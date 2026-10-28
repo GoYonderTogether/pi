@@ -1,0 +1,47 @@
+
+ RUN  v4.1.11 /Users/zoran/Documents/github/yonder-pi-1.4/packages/durable
+
+ ❯ test/harness-models-resolver.test.ts (8 tests | 2 failed) 56ms
+     × keeps the default Models and lazy agent behavior without a resolver 9ms
+     × does not rebind between generation preparation, request, and deferred poll 13ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/harness-models-resolver.test.ts > invocation-bound Models > keeps the default Models and lazy agent behavior without a resolver
+AssertionError: expected 'faulted' to be 'completed' // Object.is equality
+
+Expected: "completed"
+Received: "faulted"
+
+ ❯ test/harness-models-resolver.test.ts:47:74
+     45|     context,
+     46|    );
+     47|    expect((await harness.waitForTask(id, context)).state.outcome.statu…
+       |                                                                          ^
+     48|    expect(beforeAgent).not.toHaveBeenCalled();
+     49|   } finally {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  test/harness-models-resolver.test.ts > invocation-bound Models > does not rebind between generation preparation, request, and deferred poll
+AssertionError: expected 'unanswered' to be 'done' // Object.is equality
+
+Expected: "done"
+Received: "unanswered"
+
+ ❯ test/harness-models-resolver.test.ts:213:52
+    211|    const root = await harness.root(context, { agent: { model } });
+    212|    const submission = await root.submit({ type: "input", content: "hi"…
+    213|    expect((await submission.wait(context)).status).toBe("done");
+       |                                                    ^
+    214|    expect(resolveModels).toHaveBeenCalledTimes(1);
+    215|    expect(fetch).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 6 passed (8)
+   Start at  13:12:08
+   Duration  672ms (transform 347ms, setup 333ms, import 215ms, tests 56ms, environment 0ms)
+

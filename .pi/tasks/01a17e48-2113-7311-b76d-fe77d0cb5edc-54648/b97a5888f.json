@@ -1,0 +1,28 @@
+{
+  "id": "b97a5888f",
+  "name": "验证移植类型",
+  "command": "cd /Users/zoran/Documents/github/yonder-pi-1.4 && npm run check",
+  "status": "failed",
+  "outputPath": ".pi/tasks/01a17e48-2113-7311-b76d-fe77d0cb5edc-54648/b97a5888f.output",
+  "cwd": "/Users/zoran/Documents/github/yonder-pi",
+  "startTime": 1793120912110,
+  "endTime": 1793120924548,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 80455,
+  "bytesWritten": 1376,
+  "isAgent": false,
+  "surviveReload": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "shellPolicy": {
+    "policy": "inherit",
+    "executable": "/bin/zsh",
+    "argvPrefix": [
+      "-c"
+    ],
+    "dialect": "posix"
+  }
+}

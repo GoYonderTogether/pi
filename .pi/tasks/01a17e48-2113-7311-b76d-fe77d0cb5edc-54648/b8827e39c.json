@@ -1,0 +1,27 @@
+{
+  "id": "b8827e39c",
+  "name": "获取模型目录",
+  "command": "cd /Users/zoran/Documents/github/yonder-pi-1.4 && ~/.local/bin/agent-network run -- npm run hydrate:model-data",
+  "status": "completed",
+  "outputPath": ".pi/tasks/01a17e48-2113-7311-b76d-fe77d0cb5edc-54648/b8827e39c.output",
+  "cwd": "/Users/zoran/Documents/github/yonder-pi",
+  "startTime": 1793120828759,
+  "endTime": 1793120838216,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 77855,
+  "bytesWritten": 3644,
+  "isAgent": false,
+  "surviveReload": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "shellPolicy": {
+    "policy": "inherit",
+    "executable": "/bin/zsh",
+    "argvPrefix": [
+      "-c"
+    ],
+    "dialect": "posix"
+  }
+}

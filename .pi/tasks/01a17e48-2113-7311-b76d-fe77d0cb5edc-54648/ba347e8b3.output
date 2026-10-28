@@ -1,0 +1,1161 @@
+
+> pi-monorepo@0.0.3 check
+> node scripts/biome-check.mjs --write && npm run check:pinned-deps && npm run check:runtime-deps && npm run check:ts-imports && npm run check:entry-graphs && npm run check:install-lock:coding-agent && tsc --noEmit && npm run check:browser-smoke
+
+Checked 1546 files in 8s. No fixes applied.
+
+> pi-monorepo@0.0.3 check:pinned-deps
+> node scripts/check-pinned-deps.mjs
+
+
+> pi-monorepo@0.0.3 check:runtime-deps
+> node scripts/check-runtime-deps.mjs
+
+Public package runtime imports have declared dependencies.
+
+> pi-monorepo@0.0.3 check:ts-imports
+> node scripts/check-ts-relative-imports.mjs
+
+
+> pi-monorepo@0.0.3 check:entry-graphs
+> node scripts/check-entry-graphs.mjs
+
+Entry point graphs are within budget.
+
+> pi-monorepo@0.0.3 check:install-lock:coding-agent
+> node scripts/generate-coding-agent-install-lock.mjs --check
+
+packages/coding-agent/install-lock is up to date.
+packages/agent/test/agent.test.ts(129,42): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/agent/test/agent.test.ts(618,39): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/src/providers/all.ts(100,33): error TS18046: 'modelDataManifest' is of type 'unknown'.
+packages/ai/src/providers/amazon-bedrock.models.ts(7,54): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/amazon-bedrock.models.ts(8,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/amazon-bedrock.models.ts(10,61): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/amazon-bedrock.models.ts(11,45): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/amazon-bedrock.models.ts(13,71): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/amazon-bedrock.models.ts(14,50): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/ant-ling.models.ts(7,48): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/ant-ling.models.ts(8,38): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/ant-ling.models.ts(10,55): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/ant-ling.models.ts(11,39): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/ant-ling.models.ts(13,65): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/ant-ling.models.ts(14,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/anthropic.models.ts(7,49): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/anthropic.models.ts(8,39): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/anthropic.models.ts(10,56): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/anthropic.models.ts(11,40): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/anthropic.models.ts(13,66): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/anthropic.models.ts(14,45): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/azure.models.ts(7,45): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/azure.models.ts(8,35): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/azure.models.ts(10,52): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/azure.models.ts(11,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/azure.models.ts(13,62): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/azure.models.ts(14,41): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/baseten.models.ts(7,47): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/baseten.models.ts(8,37): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/baseten.models.ts(10,54): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/baseten.models.ts(11,38): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/baseten.models.ts(13,64): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/baseten.models.ts(14,43): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/cerebras.models.ts(7,48): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/cerebras.models.ts(8,38): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/cerebras.models.ts(10,55): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/cerebras.models.ts(11,39): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/cerebras.models.ts(13,65): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/cerebras.models.ts(14,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/cloudflare-ai-gateway.models.ts(7,61): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/cloudflare-ai-gateway.models.ts(8,51): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/cloudflare-ai-gateway.models.ts(10,68): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/cloudflare-ai-gateway.models.ts(11,52): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/cloudflare-ai-gateway.models.ts(13,78): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/cloudflare-ai-gateway.models.ts(14,57): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/cloudflare-workers-ai.models.ts(7,61): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/cloudflare-workers-ai.models.ts(8,51): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/cloudflare-workers-ai.models.ts(10,68): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/cloudflare-workers-ai.models.ts(11,52): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/cloudflare-workers-ai.models.ts(13,78): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/cloudflare-workers-ai.models.ts(14,57): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/cloudflare-workers-ai.ts(16,3): error TS2322: Type 'unknown[]' is not assignable to type 'readonly ProviderModel<"openai-completions">[]'.
+  Type 'unknown' is not assignable to type 'ProviderModel<"openai-completions">'.
+packages/ai/src/providers/deepseek.models.ts(7,48): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/deepseek.models.ts(8,38): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/deepseek.models.ts(10,55): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/deepseek.models.ts(11,39): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/deepseek.models.ts(13,65): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/deepseek.models.ts(14,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/fireworks.models.ts(7,49): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/fireworks.models.ts(8,39): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/fireworks.models.ts(10,56): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/fireworks.models.ts(11,40): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/fireworks.models.ts(13,66): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/fireworks.models.ts(14,45): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/github-copilot.models.ts(7,54): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/github-copilot.models.ts(8,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/github-copilot.models.ts(10,61): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/github-copilot.models.ts(11,45): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/github-copilot.models.ts(13,71): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/github-copilot.models.ts(14,50): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/google-vertex.models.ts(7,53): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/google-vertex.models.ts(8,43): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/google-vertex.models.ts(10,60): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/google-vertex.models.ts(11,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/google-vertex.models.ts(13,70): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/google-vertex.models.ts(14,49): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/google.models.ts(7,46): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/google.models.ts(8,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/google.models.ts(10,53): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/google.models.ts(11,37): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/google.models.ts(13,63): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/google.models.ts(14,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/groq.models.ts(7,44): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/groq.models.ts(8,34): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/groq.models.ts(10,51): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/groq.models.ts(11,35): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/groq.models.ts(13,61): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/groq.models.ts(14,40): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/huggingface.models.ts(7,51): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/huggingface.models.ts(8,41): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/huggingface.models.ts(10,58): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/huggingface.models.ts(11,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/huggingface.models.ts(13,68): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/huggingface.models.ts(14,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/kimi-coding.models.ts(7,51): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/kimi-coding.models.ts(8,41): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/kimi-coding.models.ts(10,58): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/kimi-coding.models.ts(11,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/kimi-coding.models.ts(13,68): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/kimi-coding.models.ts(14,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/meta.models.ts(7,44): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/meta.models.ts(8,34): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/meta.models.ts(10,51): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/meta.models.ts(11,35): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/meta.models.ts(13,61): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/meta.models.ts(14,40): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/minimax-cn.models.ts(7,50): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/minimax-cn.models.ts(8,40): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/minimax-cn.models.ts(10,57): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/minimax-cn.models.ts(11,41): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/minimax-cn.models.ts(13,67): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/minimax-cn.models.ts(14,46): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/minimax.models.ts(7,47): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/minimax.models.ts(8,37): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/minimax.models.ts(10,54): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/minimax.models.ts(11,38): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/minimax.models.ts(13,64): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/minimax.models.ts(14,43): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/mistral.models.ts(7,47): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/mistral.models.ts(8,37): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/mistral.models.ts(10,54): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/mistral.models.ts(11,38): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/mistral.models.ts(13,64): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/mistral.models.ts(14,43): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/moonshotai-cn.models.ts(7,53): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/moonshotai-cn.models.ts(8,43): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/moonshotai-cn.models.ts(10,60): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/moonshotai-cn.models.ts(11,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/moonshotai-cn.models.ts(13,70): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/moonshotai-cn.models.ts(14,49): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/moonshotai.models.ts(7,50): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/moonshotai.models.ts(8,40): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/moonshotai.models.ts(10,57): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/moonshotai.models.ts(11,41): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/moonshotai.models.ts(13,67): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/moonshotai.models.ts(14,46): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/nvidia.models.ts(7,46): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/nvidia.models.ts(8,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/nvidia.models.ts(10,53): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/nvidia.models.ts(11,37): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/nvidia.models.ts(13,63): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/nvidia.models.ts(14,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/openai-codex.models.ts(7,52): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/openai-codex.models.ts(8,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/openai-codex.models.ts(10,59): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/openai-codex.models.ts(11,43): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/openai-codex.models.ts(13,69): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/openai-codex.models.ts(14,48): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/openai.models.ts(7,46): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/openai.models.ts(8,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/openai.models.ts(10,53): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/openai.models.ts(11,37): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/openai.models.ts(13,63): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/openai.models.ts(14,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/openai.ts(23,3): error TS2322: Type 'unknown[]' is not assignable to type 'readonly ProviderModel<"openai-responses">[]'.
+  Type 'unknown' is not assignable to type 'ProviderModel<"openai-responses">'.
+packages/ai/src/providers/opencode-go.models.ts(7,51): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/opencode-go.models.ts(8,41): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/opencode-go.models.ts(10,58): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/opencode-go.models.ts(11,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/opencode-go.models.ts(13,68): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/opencode-go.models.ts(14,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/opencode.models.ts(7,48): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/opencode.models.ts(8,38): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/opencode.models.ts(10,55): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/opencode.models.ts(11,39): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/opencode.models.ts(13,65): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/opencode.models.ts(14,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/opencode.ts(18,3): error TS2322: Type 'unknown[]' is not assignable to type 'readonly ProviderModel<OpenCodeApi>[]'.
+  Type 'unknown' is not assignable to type 'ProviderModel<OpenCodeApi>'.
+packages/ai/src/providers/openrouter.models.ts(7,50): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/openrouter.models.ts(8,40): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/openrouter.models.ts(10,57): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/openrouter.models.ts(11,41): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/openrouter.models.ts(13,67): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/openrouter.models.ts(14,46): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/openrouter.ts(75,3): error TS2322: Type 'unknown[]' is not assignable to type 'readonly ProviderModel<"anthropic-messages" | "openai-completions">[]'.
+  Type 'unknown' is not assignable to type 'ProviderModel<"anthropic-messages" | "openai-completions">'.
+packages/ai/src/providers/qwen-token-plan-cn.models.ts(7,58): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan-cn.models.ts(8,48): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan-cn.models.ts(10,65): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan-cn.models.ts(11,49): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan-cn.models.ts(13,75): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan-cn.models.ts(14,54): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan-individual.models.ts(7,66): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan-individual.models.ts(8,56): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan-individual.models.ts(10,73): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan-individual.models.ts(11,57): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan-individual.models.ts(13,83): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan-individual.models.ts(14,62): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan.models.ts(7,55): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan.models.ts(8,45): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan.models.ts(10,62): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan.models.ts(11,46): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan.models.ts(13,72): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/qwen-token-plan.models.ts(14,51): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/radius.models.ts(7,46): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/radius.models.ts(8,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/radius.models.ts(10,53): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/radius.models.ts(11,37): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/radius.models.ts(13,63): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/radius.models.ts(14,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/radius.ts(28,53): error TS2698: Spread types may only be created from object types.
+packages/ai/src/providers/together.models.ts(7,48): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/together.models.ts(8,38): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/together.models.ts(10,55): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/together.models.ts(11,39): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/together.models.ts(13,65): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/together.models.ts(14,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/typesafe.models.ts(7,48): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/typesafe.models.ts(8,38): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/typesafe.models.ts(10,55): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/typesafe.models.ts(11,39): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/typesafe.models.ts(13,65): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/typesafe.models.ts(14,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/vercel-ai-gateway.models.ts(7,57): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/vercel-ai-gateway.models.ts(8,47): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/vercel-ai-gateway.models.ts(10,64): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/vercel-ai-gateway.models.ts(11,48): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/vercel-ai-gateway.models.ts(13,74): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/vercel-ai-gateway.models.ts(14,53): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/vercel-ai-gateway.ts(13,3): error TS2322: Type 'unknown[]' is not assignable to type 'readonly ProviderModel<"anthropic-messages">[]'.
+  Type 'unknown' is not assignable to type 'ProviderModel<"anthropic-messages">'.
+packages/ai/src/providers/xai.models.ts(7,43): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xai.models.ts(8,33): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xai.models.ts(10,50): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xai.models.ts(11,34): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xai.models.ts(13,60): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xai.models.ts(14,39): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-ams.models.ts(7,61): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-ams.models.ts(8,51): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-ams.models.ts(10,68): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-ams.models.ts(11,52): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-ams.models.ts(13,78): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-ams.models.ts(14,57): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-cn.models.ts(7,60): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-cn.models.ts(8,50): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-cn.models.ts(10,67): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-cn.models.ts(11,51): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-cn.models.ts(13,77): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-cn.models.ts(14,56): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-sgp.models.ts(7,61): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-sgp.models.ts(8,51): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-sgp.models.ts(10,68): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-sgp.models.ts(11,52): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-sgp.models.ts(13,78): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xiaomi-token-plan-sgp.models.ts(14,57): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xiaomi.models.ts(7,46): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xiaomi.models.ts(8,36): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xiaomi.models.ts(10,53): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xiaomi.models.ts(11,37): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/xiaomi.models.ts(13,63): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/xiaomi.models.ts(14,42): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/zai-coding-cn.models.ts(7,53): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/zai-coding-cn.models.ts(8,43): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/zai-coding-cn.models.ts(10,60): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/zai-coding-cn.models.ts(11,44): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/zai-coding-cn.models.ts(13,70): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/zai-coding-cn.models.ts(14,49): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/zai.models.ts(7,43): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/zai.models.ts(8,33): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/zai.models.ts(10,50): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/zai.models.ts(11,34): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/src/providers/zai.models.ts(13,60): error TS2344: Type 'unknown' does not satisfy the constraint 'ModelGroups'.
+packages/ai/src/providers/zai.models.ts(14,39): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ModelGroups'.
+packages/ai/test/abort.test.ts(102,34): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(114,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(131,34): error TS2345: Argument of type '"gpt-5-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(143,33): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(157,37): error TS2345: Argument of type '"claude-sonnet-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(169,35): error TS2345: Argument of type '"devstral-medium-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(181,36): error TS2345: Argument of type '"moonshotai/Kimi-K3"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(193,35): error TS2345: Argument of type '"zai-org/GLM-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(205,35): error TS2345: Argument of type '"MiniMax-M2.7"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(217,34): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(229,48): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(241,49): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(253,49): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(265,43): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(277,54): error TS2345: Argument of type '"qwen3.8-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(289,46): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(301,39): error TS2345: Argument of type '"kimi-for-coding"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(313,45): error TS2345: Argument of type '"google/gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(326,41): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(331,41): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/abort.test.ts(337,42): error TS2345: Argument of type '"global.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-cache-write-1h-cost.test.ts(63,39): error TS2345: Argument of type '"claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-cache-write-1h-cost.test.ts(79,47): error TS2345: Argument of type '"anthropic/claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-cache-write-1h-cost.test.ts(113,39): error TS2345: Argument of type '"claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-empty-thinking-signature-compat.test.ts(104,48): error TS2339: Property 'allowEmptySignature' does not exist on type 'never'.
+packages/ai/test/anthropic-empty-thinking-signature-compat.test.ts(114,39): error TS2345: Argument of type '"accounts/fireworks/models/deepseek-v4p1-flash" | "accounts/fireworks/models/nemotron-3-ultra-nvfp4" | "accounts/fireworks/models/qwen3p8-2p4t-a95b" | "accounts/fireworks/models/qwen3p8-max"' is not assignable to parameter of type 'never'.
+  Type '"accounts/fireworks/models/deepseek-v4p1-flash"' is not assignable to type 'never'.
+packages/ai/test/anthropic-empty-thinking-signature-compat.test.ts(115,24): error TS2339: Property 'allowEmptySignature' does not exist on type 'never'.
+packages/ai/test/anthropic-force-adaptive-thinking.test.ts(86,62): error TS2345: Argument of type '"claude-fable-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-force-adaptive-thinking.test.ts(94,29): error TS2345: Argument of type '"claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(232,40): error TS2345: Argument of type '"claude-fable-5-1"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(233,45): error TS2345: Argument of type '"anthropic/claude-fable-5.1"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(234,45): error TS2345: Argument of type '"claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(235,25): error TS2339: Property 'supportsMidConvoEffort' does not exist on type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(239,29): error TS2339: Property 'supportsMidConvoEffort' does not exist on type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(240,30): error TS2339: Property 'supportsMidConvoEffort' does not exist on type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(242,33): error TS2345: Argument of type '"anthropic/claude-opus-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(242,68): error TS2339: Property 'supportsMidConvoEffort' does not exist on type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(243,32): error TS2345: Argument of type '"claude-opus-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(243,57): error TS2339: Property 'allowedFallbackModels' does not exist on type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(248,40): error TS2345: Argument of type '"claude-haiku-5-5" | "claude-opus-5"' is not assignable to parameter of type 'never'.
+  Type '"claude-haiku-5-5"' is not assignable to type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(249,25): error TS2339: Property 'supportsMidConvoEffort' does not exist on type 'never'.
+packages/ai/test/anthropic-mid-conversation-effort.test.ts(253,33): error TS2345: Argument of type '"claude-fable-5-1" | "claude-opus-5-5" | "claude-sonnet-5-5"' is not assignable to parameter of type 'never'.
+  Type '"claude-fable-5-1"' is not assignable to type 'never'.
+packages/ai/test/anthropic-opus-4-8-smoke.test.ts(26,39): error TS2345: Argument of type '"claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(114,39): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(144,39): error TS2345: Argument of type '"claude-opus-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(172,29): error TS2345: Argument of type '"claude-opus-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(200,39): error TS2345: Argument of type '"claude-opus-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(260,26): error TS2345: Argument of type '"claude-fable-5-1"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(285,27): error TS2345: Argument of type '"anthropic/claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(307,26): error TS2345: Argument of type '"claude-fable-5-1"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(337,26): error TS2345: Argument of type '"claude-fable-5-1"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(359,39): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(446,39): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(544,39): error TS2345: Argument of type '"claude-fable-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(603,39): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(653,39): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-sse-parsing.test.ts(681,39): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-temperature-compat.test.ts(69,62): error TS2345: Argument of type '"claude-opus-4-7"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-temperature-compat.test.ts(75,62): error TS2345: Argument of type '"claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-temperature-compat.test.ts(81,62): error TS2345: Argument of type '"claude-opus-4-7"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-temperature-compat.test.ts(87,62): error TS2345: Argument of type '"claude-opus-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-temperature-compat.test.ts(93,62): error TS2345: Argument of type '"claude-sonnet-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-thinking-binding-e2e.test.ts(7,37): error TS2345: Argument of type '"claude-fable-5-1"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-thinking-disable.test.ts(114,62): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-thinking-disable.test.ts(121,62): error TS2345: Argument of type '"claude-opus-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-thinking-disable.test.ts(128,62): error TS2345: Argument of type '"claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-thinking-disable.test.ts(135,62): error TS2345: Argument of type '"claude-fable-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-thinking-disable.test.ts(142,62): error TS2345: Argument of type '"claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-thinking-disable.test.ts(149,62): error TS2345: Argument of type '"claude-sonnet-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-thinking-disable.test.ts(156,62): error TS2345: Argument of type '"claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-thinking-disable.test.ts(165,66): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/anthropic-tool-name-normalization.test.ts(26,38): error TS2345: Argument of type '"claude-sonnet-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/azure-openai-base-url.test.ts(104,34): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/azure-openai-base-url.test.ts(111,34): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/azure-openai-base-url.test.ts(169,35): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/azure-openai-base-url.test.ts(178,35): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/azure-openai-base-url.test.ts(189,35): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/azure-openai-base-url.test.ts(199,39): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/azure-openai-base-url.test.ts(202,14): error TS2698: Spread types may only be created from object types.
+packages/ai/test/azure-openai-base-url.test.ts(226,35): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/azure-openai-base-url.test.ts(243,35): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/azure-openai-completions.test.ts(107,27): error TS2345: Argument of type '"deepseek-v4-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/azure-openai-completions.test.ts(135,48): error TS2345: Argument of type '{ apiKey: string; sessionId: string; }' is not assignable to parameter of type 'undefined'.
+packages/ai/test/azure-openai-completions.test.ts(144,48): error TS2345: Argument of type '{ apiKey: string; reasoningEffort: string; }' is not assignable to parameter of type 'undefined'.
+packages/ai/test/azure-openai-completions.test.ts(160,48): error TS2345: Argument of type '{ apiKey: string; }' is not assignable to parameter of type 'undefined'.
+packages/ai/test/azure-openai-completions.test.ts(172,38): error TS2345: Argument of type '{ apiKey: string; cacheRetention: string; sessionId: string; }' is not assignable to parameter of type 'undefined'.
+packages/ai/test/azure-openai-completions.test.ts(209,66): error TS2345: Argument of type '{ apiKey: string; }' is not assignable to parameter of type 'undefined'.
+packages/ai/test/azure-openai-completions.test.ts(218,48): error TS2345: Argument of type '{ apiKey: string; }' is not assignable to parameter of type 'undefined'.
+packages/ai/test/azure-openai-completions.test.ts(226,63): error TS2345: Argument of type '{ apiKey: string; }' is not assignable to parameter of type 'undefined'.
+packages/ai/test/azure-openai-completions.test.ts(234,63): error TS2345: Argument of type '{ apiKey: string; }' is not assignable to parameter of type 'undefined'.
+packages/ai/test/azure-openai-completions.test.ts(254,38): error TS2345: Argument of type '{ apiKey: string; onPayload: (payload: any) => { temperature: number; }; }' is not assignable to parameter of type 'undefined'.
+packages/ai/test/azure-openai-completions.test.ts(256,17): error TS7006: Parameter 'payload' implicitly has an 'any' type.
+packages/ai/test/azure-openai-completions.test.ts(270,40): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/azure-openai-completions.test.ts(270,65): error TS2345: Argument of type '{ apiKey: string; }' is not assignable to parameter of type 'undefined'.
+packages/ai/test/azure-openai-completions.test.ts(276,48): error TS2345: Argument of type '{ apiKey: string; }' is not assignable to parameter of type 'undefined'.
+packages/ai/test/baseten-models.test.ts(17,30): error TS2345: Argument of type '"zai-org/GLM-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/baseten-models.test.ts(18,30): error TS2345: Argument of type '"zai-org/GLM-5.2-Fast"' is not assignable to parameter of type 'never'.
+packages/ai/test/baseten-models.test.ts(22,37): error TS2345: Argument of type '"zai-org/GLM-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/baseten-models.test.ts(43,37): error TS2345: Argument of type '"zai-org/GLM-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-cache-write-1h-cost.test.ts(64,42): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-credentials.test.ts(74,51): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-credentials.test.ts(90,51): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-credentials.test.ts(105,51): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-credentials.test.ts(126,51): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-credentials.test.ts(142,51): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-credentials.test.ts(156,51): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-custom-headers.test.ts(66,36): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-endpoint-resolution.test.ts(98,44): error TS2345: Argument of type '"eu.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-endpoint-resolution.test.ts(105,44): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-endpoint-resolution.test.ts(114,44): error TS2345: Argument of type '"eu.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-endpoint-resolution.test.ts(123,44): error TS2345: Argument of type '"eu.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-endpoint-resolution.test.ts(147,48): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-endpoint-resolution.test.ts(161,48): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-endpoint-resolution.test.ts(174,48): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-endpoint-resolution.test.ts(187,48): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-endpoint-resolution.test.ts(201,44): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-error-metadata.test.ts(65,36): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-raw-stop-reason.test.ts(66,42): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-response-headers.test.ts(38,48): error TS2345: Argument of type '"us.anthropic.claude-haiku-4-5-20251001-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(71,48): error TS2345: Argument of type '"global.anthropic.claude-opus-4-6-v1"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(86,48): error TS2345: Argument of type '"global.anthropic.claude-opus-4-6-v1"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(101,44): error TS2345: Argument of type '"global.anthropic.claude-fable-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(111,44): error TS2345: Argument of type '"global.anthropic.claude-sonnet-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(121,44): error TS2345: Argument of type '"global.anthropic.claude-opus-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(131,44): error TS2345: Argument of type '"global.anthropic.claude-opus-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(141,44): error TS2345: Argument of type '"global.anthropic.claude-fable-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(151,44): error TS2345: Argument of type '"global.anthropic.claude-opus-5-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(163,45): error TS2345: Argument of type '"global.anthropic.claude-opus-4-6-v1" | "global.anthropic.claude-sonnet-4-6"' is not assignable to parameter of type 'never'.
+  Type '"global.anthropic.claude-opus-4-6-v1"' is not assignable to type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(173,48): error TS2345: Argument of type '"us.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(187,48): error TS2345: Argument of type '"global.anthropic.claude-opus-4-6-v1"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(213,68): error TS2345: Argument of type '"global.openai.gpt-5.6-sol" | "global.openai.gpt-6-sol" | "us.openai.gpt-6-luna"' is not assignable to parameter of type 'never'.
+  Type '"global.openai.gpt-5.6-sol"' is not assignable to type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(221,34): error TS2345: Argument of type '"global.openai.gpt-6-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(232,44): error TS2345: Argument of type '"openai.gpt-oss-120b-1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(247,54): error TS2345: Argument of type '"global.openai.gpt-6-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(267,49): error TS2345: Argument of type '"global.anthropic.claude-sonnet-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(297,48): error TS2345: Argument of type '"global.anthropic.claude-opus-4-6-v1"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(311,48): error TS2345: Argument of type '"global.anthropic.claude-opus-4-6-v1"' is not assignable to parameter of type 'never'.
+packages/ai/test/bedrock-thinking-payload.test.ts(348,48): error TS2345: Argument of type '"us.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(56,41): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(79,40): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(103,44): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(139,44): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(168,44): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(192,44): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(218,44): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(246,31): error TS2345: Argument of type '"gpt-5.6-luna" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-6-astra" | "gpt-6-luna" | "gpt-6-sol"' is not assignable to parameter of type 'never'.
+  Type '"gpt-5.6-luna"' is not assignable to type 'never'.
+packages/ai/test/cache-retention.test.ts(253,38): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(276,38): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(299,41): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(329,27): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(356,37): error TS2345: Argument of type '"gpt-5.6-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(383,37): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/cache-retention.test.ts(414,37): error TS2345: Argument of type '"gpt-4o-mini" | "gpt-6-astra" | "gpt-6-luna" | "gpt-6-sol"' is not assignable to parameter of type 'never'.
+  Type '"gpt-4o-mini"' is not assignable to type 'never'.
+packages/ai/test/cache-retention.test.ts(508,4): error TS7053: Element implicitly has an 'any' type because expression of type '"deepseek-v4-flash"' can't be used to index type 'ChatModelCatalog<unknown, "opencode">'.
+  Property 'deepseek-v4-flash' does not exist on type 'ChatModelCatalog<unknown, "opencode">'.
+packages/ai/test/cache-retention.test.ts(509,4): error TS7053: Element implicitly has an 'any' type because expression of type '"deepseek-v4-pro"' can't be used to index type 'ChatModelCatalog<unknown, "opencode">'.
+  Property 'deepseek-v4-pro' does not exist on type 'ChatModelCatalog<unknown, "opencode">'.
+packages/ai/test/cache-retention.test.ts(510,4): error TS7053: Element implicitly has an 'any' type because expression of type '"kimi-k2.5"' can't be used to index type 'ChatModelCatalog<unknown, "opencode">'.
+  Property 'kimi-k2.5' does not exist on type 'ChatModelCatalog<unknown, "opencode">'.
+packages/ai/test/cache-retention.test.ts(511,4): error TS7053: Element implicitly has an 'any' type because expression of type '"kimi-k2.6"' can't be used to index type 'ChatModelCatalog<unknown, "opencode">'.
+  Property 'kimi-k2.6' does not exist on type 'ChatModelCatalog<unknown, "opencode">'.
+packages/ai/test/cache-retention.test.ts(512,4): error TS7053: Element implicitly has an 'any' type because expression of type '"minimax-m2.7"' can't be used to index type 'ChatModelCatalog<unknown, "opencode">'.
+  Property 'minimax-m2.7' does not exist on type 'ChatModelCatalog<unknown, "opencode">'.
+packages/ai/test/cache-retention.test.ts(540,12): error TS7053: Element implicitly has an 'any' type because expression of type '"gpt-oss-120b"' can't be used to index type 'ChatModelCatalog<unknown, "cerebras">'.
+  Property 'gpt-oss-120b' does not exist on type 'ChatModelCatalog<unknown, "cerebras">'.
+packages/ai/test/cache-retention.test.ts(540,45): error TS7053: Element implicitly has an 'any' type because expression of type '"qwen-3.8-27b"' can't be used to index type 'ChatModelCatalog<unknown, "cerebras">'.
+  Property 'qwen-3.8-27b' does not exist on type 'ChatModelCatalog<unknown, "cerebras">'.
+packages/ai/test/classifier-models.test.ts(116,53): error TS2345: Argument of type '"jev-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/cloudflare-workers-ai-system-one.test.ts(77,74): error TS2345: Argument of type '"typesafe/jev"' is not assignable to parameter of type 'never'.
+packages/ai/test/codex-websocket-cached-probe.ts(166,41): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(98,40): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(110,40): error TS2345: Argument of type '"claude-sonnet-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(146,46): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(165,42): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(166,4): error TS2322: Type 'any' is not assignable to type 'never'.
+packages/ai/test/context-overflow.test.ts(178,37): error TS2345: Argument of type '"gpt-4o"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(190,36): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(207,37): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(233,44): error TS2345: Argument of type '"gpt-5.6-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(251,45): error TS2345: Argument of type '"global.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(267,34): error TS2345: Argument of type '"grok-4.3"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(284,35): error TS2345: Argument of type '"llama-3.3-70b-versatile"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(326,42): error TS2345: Argument of type '"moonshotai/Kimi-K2.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(342,39): error TS2345: Argument of type '"moonshotai/Kimi-K3"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(359,34): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(389,38): error TS2345: Argument of type '"devstral-medium-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(406,38): error TS2345: Argument of type '"MiniMax-M2.7"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(424,37): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(436,51): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(448,52): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(460,52): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(472,46): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(484,57): error TS2345: Argument of type '"qwen3.8-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(496,49): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(512,42): error TS2345: Argument of type '"kimi-for-coding"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(527,48): error TS2345: Argument of type '"google/gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(544,41): error TS2345: Argument of type '"anthropic/claude-sonnet-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(555,41): error TS2345: Argument of type '"deepseek/deepseek-v3.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(566,41): error TS2345: Argument of type '"mistralai/mistral-large"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(577,41): error TS2345: Argument of type '"google/gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/context-overflow.test.ts(588,41): error TS2345: Argument of type '"meta-llama/llama-4-scout"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(148,34): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(168,34): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(188,34): error TS2345: Argument of type '"gpt-5-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(208,33): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(230,37): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(250,31): error TS2345: Argument of type '"grok-4.3"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(270,32): error TS2345: Argument of type '"openai/gpt-oss-20b"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(290,36): error TS2345: Argument of type '"gpt-oss-120b"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(310,49): error TS2345: Argument of type '"@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(330,49): error TS2345: Argument of type '"workers-ai/@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(350,39): error TS2345: Argument of type '"moonshotai/Kimi-K2.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(370,36): error TS2345: Argument of type '"moonshotai/Kimi-K3"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(390,35): error TS2345: Argument of type '"zai-org/GLM-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(411,31): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(431,35): error TS2345: Argument of type '"devstral-medium-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(451,35): error TS2345: Argument of type '"MiniMax-M2.7"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(471,34): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(493,49): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(516,50): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(539,50): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(560,43): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(580,54): error TS2345: Argument of type '"qwen3.8-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(600,46): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(620,39): error TS2345: Argument of type '"kimi-for-coding"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(640,45): error TS2345: Argument of type '"google/gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(660,42): error TS2345: Argument of type '"global.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(684,37): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(716,44): error TS2345: Argument of type '"claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(725,44): error TS2345: Argument of type '"claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(734,44): error TS2345: Argument of type '"claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(743,44): error TS2345: Argument of type '"claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(752,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(761,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(770,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(779,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(790,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(799,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(808,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/empty.test.ts(817,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/fireworks-models.test.ts(23,39): error TS2345: Argument of type '"accounts/fireworks/models/deepseek-v4p1-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/fireworks-models.test.ts(34,38): error TS2345: Argument of type '"accounts/fireworks/models/glm-5p3"' is not assignable to parameter of type 'never'.
+packages/ai/test/fireworks-models.test.ts(35,38): error TS2345: Argument of type '"accounts/fireworks/routers/glm-5p3-fast"' is not assignable to parameter of type 'never'.
+packages/ai/test/fireworks-models.test.ts(46,40): error TS2345: Argument of type '"accounts/fireworks/models/glm-5p3" | "accounts/fireworks/routers/glm-5p3-fast"' is not assignable to parameter of type 'never'.
+  Type '"accounts/fireworks/models/glm-5p3"' is not assignable to type 'never'.
+packages/ai/test/fireworks-models.test.ts(69,38): error TS2345: Argument of type '"accounts/fireworks/models/kimi-k3"' is not assignable to parameter of type 'never'.
+packages/ai/test/fireworks-models.test.ts(70,38): error TS2345: Argument of type '"accounts/fireworks/routers/kimi-k3-fast"' is not assignable to parameter of type 'never'.
+packages/ai/test/fireworks-models.test.ts(125,39): error TS2345: Argument of type '"accounts/fireworks/models/deepseek-v4p1-flash" | "accounts/fireworks/models/qwen3p8-2p4t-a95b" | "accounts/fireworks/models/qwen3p8-max"' is not assignable to parameter of type 'never'.
+  Type '"accounts/fireworks/models/deepseek-v4p1-flash"' is not assignable to type 'never'.
+packages/ai/test/fireworks-models.test.ts(127,24): error TS2339: Property 'forceAdaptiveThinking' does not exist on type 'never'.
+packages/ai/test/fireworks-models.test.ts(159,59): error TS2345: Argument of type '"accounts/fireworks/models/glm-5p3" | "accounts/fireworks/models/kimi-k3" | "accounts/fireworks/routers/glm-5p3-fast" | "accounts/fireworks/routers/kimi-k3-fast"' is not assignable to parameter of type 'never'.
+  Type '"accounts/fireworks/models/glm-5p3"' is not assignable to type 'never'.
+packages/ai/test/fireworks-models.test.ts(163,39): error TS2345: Argument of type '"accounts/fireworks/models/nemotron-3-ultra-nvfp4"' is not assignable to parameter of type 'never'.
+packages/ai/test/fireworks-models.test.ts(164,24): error TS2339: Property 'forceAdaptiveThinking' does not exist on type 'never'.
+packages/ai/test/fireworks-models.test.ts(190,39): error TS2345: Argument of type '"accounts/fireworks/models/nemotron-3-ultra-nvfp4"' is not assignable to parameter of type 'never'.
+packages/ai/test/fireworks-models.test.ts(193,24): error TS2339: Property 'sendSessionAffinityHeaders' does not exist on type 'never'.
+packages/ai/test/fireworks-models.test.ts(194,24): error TS2339: Property 'supportsEagerToolInputStreaming' does not exist on type 'never'.
+packages/ai/test/fireworks-models.test.ts(195,24): error TS2339: Property 'supportsCacheControlOnTools' does not exist on type 'never'.
+packages/ai/test/fireworks-models.test.ts(196,24): error TS2339: Property 'supportsLongCacheRetention' does not exist on type 'never'.
+packages/ai/test/fireworks-models.test.ts(197,24): error TS2339: Property 'allowEmptySignature' does not exist on type 'never'.
+packages/ai/test/github-copilot-anthropic.test.ts(60,44): error TS2345: Argument of type '"claude-opus-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/github-copilot-anthropic.test.ts(67,45): error TS2345: Argument of type '"claude-opus-5.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/github-copilot-anthropic.test.ts(72,47): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/github-copilot-anthropic.test.ts(79,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/github-copilot-anthropic.test.ts(113,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-raw-stop-reason.test.ts(112,52): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-raw-stop-reason.test.ts(127,62): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-raw-stop-reason.test.ts(142,63): error TS2345: Argument of type '"gemini-3-flash-preview"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-raw-stop-reason.test.ts(158,49): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-raw-stop-reason.test.ts(165,50): error TS2345: Argument of type '"gemini-3-flash-preview"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-raw-stop-reason.test.ts(196,41): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-raw-stop-reason.test.ts(197,48): error TS2345: Argument of type '"gemini-3-flash-preview"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-thinking-disable.test.ts(94,57): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-thinking-disable.test.ts(100,57): error TS2345: Argument of type '"claude-sonnet-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-thinking-disable.test.ts(108,54): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-thinking-disable.test.ts(112,54): error TS2345: Argument of type '"gemini-3-flash-preview"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-thinking-disable.test.ts(116,54): error TS2345: Argument of type '"gemini-3.1-pro-preview"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-thinking-disable.test.ts(134,61): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-thinking-disable.test.ts(140,61): error TS2345: Argument of type '"gemini-3-flash-preview"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-thinking-disable.test.ts(148,54): error TS2345: Argument of type '"gpt-5.4-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-thinking-disable.test.ts(156,58): error TS2345: Argument of type '"qwen/qwen3.5-plus-02-15"' is not assignable to parameter of type 'never'.
+packages/ai/test/google-vertex-api-key-resolution.test.ts(55,41): error TS2345: Argument of type '"gemini-3-flash-preview"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(211,34): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(223,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(240,34): error TS2345: Argument of type '"gpt-5-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(252,33): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(266,39): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(278,38): error TS2345: Argument of type '"z-ai/glm-4.5v"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(290,35): error TS2345: Argument of type '"pixtral-12b"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(302,36): error TS2345: Argument of type '"moonshotai/Kimi-K3"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(315,34): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(336,49): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(353,50): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(370,50): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(385,43): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(397,54): error TS2345: Argument of type '"qwen3.8-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(409,46): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(421,39): error TS2345: Argument of type '"kimi-for-coding"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(433,45): error TS2345: Argument of type '"google/gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(445,42): error TS2345: Argument of type '"global.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(461,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(485,44): error TS2345: Argument of type '"claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(494,44): error TS2345: Argument of type '"claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(503,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(512,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(523,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/image-tool-result.test.ts(532,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/images-models.test.ts(386,45): error TS2345: Argument of type '"black-forest-labs/flux.2-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/images.test.ts(55,32): error TS2345: Argument of type '"openrouter"' is not assignable to parameter of type 'never'.
+packages/ai/test/interleaved-thinking.test.ts(124,42): error TS2345: Argument of type '"global.anthropic.claude-opus-4-5-20251101-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/interleaved-thinking.test.ts(129,42): error TS2345: Argument of type '"global.anthropic.claude-opus-4-6-v1"' is not assignable to parameter of type 'never'.
+packages/ai/test/interleaved-thinking.test.ts(136,37): error TS2345: Argument of type '"claude-opus-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/interleaved-thinking.test.ts(141,37): error TS2345: Argument of type '"claude-opus-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/max-thinking.test.ts(36,43): error TS2345: Argument of type '"gpt-5.6-luna" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-6-luna" | "gpt-6-sol"' is not assignable to parameter of type 'never'.
+  Type '"gpt-5.6-luna"' is not assignable to type 'never'.
+packages/ai/test/max-thinking.test.ts(73,43): error TS2345: Argument of type '"gpt-5.6-sol" | "gpt-6-astra" | "gpt-6-luna" | "gpt-6-sol" | "gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+  Type '"gpt-5.6-sol"' is not assignable to type 'never'.
+packages/ai/test/mistral-http-transport.test.ts(41,37): error TS2345: Argument of type '"mistral-large-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/mistral-http-transport.test.ts(162,37): error TS2345: Argument of type '"mistral-large-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/mistral-http-transport.test.ts(239,37): error TS2345: Argument of type '"mistral-large-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/mistral-http-transport.test.ts(328,37): error TS2345: Argument of type '"zai-glm-5-3"' is not assignable to parameter of type 'never'.
+packages/ai/test/mistral-http-transport.test.ts(368,37): error TS2345: Argument of type '"mistral-large-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/mistral-http-transport.test.ts(403,37): error TS2345: Argument of type '"mistral-large-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/mistral-http-transport.test.ts(423,27): error TS2345: Argument of type '"mistral-large-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/mistral-http-transport.test.ts(448,37): error TS2345: Argument of type '"mistral-large-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/mistral-http-transport.test.ts(473,37): error TS2345: Argument of type '"mistral-large-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/mistral-http-transport.test.ts(494,37): error TS2345: Argument of type '"mistral-large-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/mistral-http-transport.test.ts(530,37): error TS2345: Argument of type '"mistral-large-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/mistral-raw-stop-reason.test.ts(7,35): error TS2345: Argument of type '"devstral-medium-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/mistral-tool-schema.test.ts(20,27): error TS2345: Argument of type '"devstral-medium-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/model-catalog-types.test.ts(6,15): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.5"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.5' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/model-catalog-types.test.ts(7,15): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.5"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.5' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/model-catalog-types.test.ts(8,15): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.5"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.5' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/model-catalog-types.test.ts(9,15): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.6"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.6' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/model-catalog-types.test.ts(10,15): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.6"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.6' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/model-catalog-types.test.ts(11,15): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.7"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.7' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/model-catalog-types.test.ts(12,15): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.7"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.7' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/model-catalog-types.test.ts(13,15): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.3"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.3' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/model-catalog-types.test.ts(17,15): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.5"' can't be used to index type 'ChatModelCatalog<unknown, "github-copilot">'.
+  Property 'grok-4.5' does not exist on type 'ChatModelCatalog<unknown, "github-copilot">'.
+packages/ai/test/model-catalog-types.test.ts(18,9): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.5"' can't be used to index type 'ChatModelCatalog<unknown, "github-copilot">'.
+  Property 'grok-4.5' does not exist on type 'ChatModelCatalog<unknown, "github-copilot">'.
+packages/ai/test/model-catalog-types.test.ts(23,75): error TS18046: 'model' is of type 'unknown'.
+packages/ai/test/model-catalog-types.test.ts(25,36): error TS18046: 'model' is of type 'unknown'.
+packages/ai/test/model-catalog-types.test.ts(26,15): error TS7053: Element implicitly has an 'any' type because expression of type '"gpt-6-astra"' can't be used to index type 'ChatModelCatalog<unknown, "github-copilot">'.
+  Property 'gpt-6-astra' does not exist on type 'ChatModelCatalog<unknown, "github-copilot">'.
+packages/ai/test/model-catalog-types.test.ts(28,17): error TS7053: Element implicitly has an 'any' type because expression of type '"gpt-6-luna" | "gpt-6-sol"' can't be used to index type 'ChatModelCatalog<unknown, "github-copilot">'.
+  Property 'gpt-6-luna' does not exist on type 'ChatModelCatalog<unknown, "github-copilot">'.
+packages/ai/test/model-types.test.ts(94,41): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/model-types.test.ts(95,37): error TS2345: Argument of type '"gpt-4o"' is not assignable to parameter of type 'never'.
+packages/ai/test/model-types.test.ts(96,41): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/model-types.test.ts(97,37): error TS2345: Argument of type '"gpt-4o"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-codex-cache-affinity-e2e.test.ts(10,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-cache-control-format.test.ts(157,40): error TS2345: Argument of type '"anthropic/claude-fable-5.1:batch"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-cache-control-format.test.ts(163,40): error TS2345: Argument of type '"anthropic/claude-fable-5.1:batch"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-empty-tools.test.ts(63,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-empty-tools.test.ts(80,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-empty-tools.test.ts(96,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-empty-tools.test.ts(113,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-empty-tools.test.ts(130,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-empty-tools.test.ts(147,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-empty-tools.test.ts(167,51): error TS2345: Argument of type '"workers-ai/@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-empty-tools.test.ts(204,51): error TS2345: Argument of type '"workers-ai/@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-empty-tools.test.ts(218,51): error TS2345: Argument of type '"gpt-5.1"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-empty-tools.test.ts(237,58): error TS2345: Argument of type '"workers-ai/@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-empty-tools.test.ts(254,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-prompt-cache.test.ts(84,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-prompt-cache.test.ts(177,40): error TS2345: Argument of type '"accounts/fireworks/models/glm-5p3" | "accounts/fireworks/routers/glm-5p3-fast"' is not assignable to parameter of type 'never'.
+  Type '"accounts/fireworks/models/glm-5p3"' is not assignable to type 'never'.
+packages/ai/test/openai-completions-prompt-cache.test.ts(185,37): error TS2345: Argument of type '"zai-org/GLM-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-prompt-cache.test.ts(222,40): error TS2345: Argument of type '"auto"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(113,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(154,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(178,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(263,34): error TS2345: Argument of type '"openai/gpt-oss-20b"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(264,24): error TS2339: Property 'supportsStrictMode' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(299,34): error TS2345: Argument of type '"qwen/qwen3.6-27b"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(327,34): error TS2345: Argument of type '"openai/gpt-oss-20b"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(355,33): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(392,26): error TS2345: Argument of type '"glm-4.7"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(392,46): error TS2339: Property 'zaiToolStream' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(393,26): error TS2345: Argument of type '"glm-4.7"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(393,46): error TS2339: Property 'zaiToolStream' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(394,26): error TS2345: Argument of type '"glm-5-turbo"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(394,50): error TS2339: Property 'zaiToolStream' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(395,26): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(395,46): error TS2339: Property 'zaiToolStream' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(400,34): error TS2345: Argument of type '"glm-5.2" | "glm-5.2-highspeed"' is not assignable to parameter of type 'never'.
+  Type '"glm-5.2"' is not assignable to type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(401,25): error TS2339: Property 'supportsReasoningEffort' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(414,37): error TS2345: Argument of type '"glm-5.3"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(415,25): error TS2339: Property 'supportsReasoningEffort' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(429,33): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(467,33): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(527,33): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(555,37): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(559,5): error TS2698: Spread types may only be created from object types.
+packages/ai/test/openai-completions-tool-choice.test.ts(599,33): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(641,33): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(679,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(714,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(742,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(784,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(874,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1021,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1154,40): error TS2345: Argument of type '"deepseek/deepseek-v4-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1177,27): error TS2345: Argument of type '"openai/gpt-5.2-codex"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1178,27): error TS2345: Argument of type '"anthropic/claude-fable-5.1:batch"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1203,64): error TS2345: Argument of type '"gpt-5.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1228,40): error TS2345: Argument of type '"moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1229,24): error TS2339: Property 'supportsDeveloperRole' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1230,24): error TS2339: Property 'requiresReasoningContentOnAssistantMessages' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1237,37): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1238,25): error TS2339: Property 'requiresReasoningContentOnAssistantMessages' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1239,25): error TS2339: Property 'thinkingFormat' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1240,25): error TS2339: Property 'maxTokensField' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1241,25): error TS2339: Property 'supportsDeveloperRole' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1249,37): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1250,25): error TS2339: Property 'thinkingFormat' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1251,25): error TS2339: Property 'requiresReasoningContentOnAssistantMessages' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1252,25): error TS2339: Property 'supportsDeveloperRole' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1253,25): error TS2339: Property 'supportsStore' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1258,36): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1323,69): error TS2345: Argument of type '"kimi-k3"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1350,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1370,69): error TS2345: Argument of type '"kimi-k3"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1429,38): error TS2345: Argument of type '"kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1451,38): error TS2345: Argument of type '"kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1474,41): error TS2345: Argument of type '"kimi-k2.7-code"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1474,86): error TS2345: Argument of type '"kimi-k2.7-code"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1500,43): error TS2345: Argument of type '"kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1522,42): error TS2345: Argument of type '"kimi-k3"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1522,76): error TS2345: Argument of type '"kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1526,25): error TS2339: Property 'maxTokensField' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1562,46): error TS2345: Argument of type '"deepseek-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1562,87): error TS2345: Argument of type '"deepseek-v4-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1566,25): error TS2339: Property 'maxTokensField' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1593,34): error TS2345: Argument of type '"glm-5-turbo"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1593,67): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1596,25): error TS2339: Property 'maxTokensField' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1620,38): error TS2345: Argument of type '"grok-build-0.1"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1655,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1694,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1740,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1764,40): error TS2345: Argument of type '"deepseek/deepseek-r1-0528"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1867,38): error TS2345: Argument of type '"Ring-2.6-1T"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1878,24): error TS2339: Property 'supportsStrictMode' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1879,24): error TS2339: Property 'requiresReasoningContentOnAssistantMessages' does not exist on type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1920,37): error TS2345: Argument of type '"Ring-2.6-1T"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-choice.test.ts(1939,37): error TS2345: Argument of type '"Ling-2.6-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-result-images.test.ts(74,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-result-images.test.ts(102,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-tool-result-images.test.ts(151,65): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-completions-vllm-priority.test.ts(54,63): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-cache-affinity-e2e.test.ts(7,36): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(33,56): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(77,44): error TS2345: Argument of type '"gpt-6-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(122,23): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(160,51): error TS2345: Argument of type '"gpt-5.6-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(203,24): error TS2339: Property 'supportsStrictMode' does not exist on type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(224,36): error TS2345: Argument of type '"gpt-5.1" | "gpt-5.2" | "gpt-5.3-codex" | "gpt-5.4" | "gpt-5.4-mini" | "gpt-5.4-nano" | "gpt-5.5" | "gpt-5.6-luna" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-6-luna" | "gpt-6-sol"' is not assignable to parameter of type 'never'.
+  Type '"gpt-5.1"' is not assignable to type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(260,37): error TS2345: Argument of type '"gpt-5" | "gpt-5-mini" | "gpt-5-nano" | "gpt-5-pro" | "gpt-5.2-pro" | "gpt-5.4-pro" | "gpt-5.5-pro"' is not assignable to parameter of type 'never'.
+  Type '"gpt-5"' is not assignable to type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(312,23): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(335,26): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(347,26): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(372,26): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(396,26): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(420,38): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(432,24): error TS2339: Property 'sessionAffinityFormat' does not exist on type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(441,26): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(492,37): error TS2345: Argument of type '"gpt-5.4" | "gpt-5.5" | "gpt-6-luna"' is not assignable to parameter of type 'never'.
+  Type '"gpt-5.4"' is not assignable to type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(555,23): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(577,40): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-compat.test.ts(580,14): error TS2698: Spread types may only be created from object types.
+packages/ai/test/openai-responses-empty-tool-result.test.ts(31,37): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-foreign-toolcall-id.test.ts(21,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-message-id.test.ts(18,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-reasoning-replay-e2e.test.ts(20,37): error TS2345: Argument of type '"gpt-5-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-reasoning-replay-e2e.test.ts(92,38): error TS2345: Argument of type '"gpt-5-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-reasoning-replay-e2e.test.ts(93,38): error TS2345: Argument of type '"gpt-5.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-reasoning-replay-e2e.test.ts(191,49): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-reasoning-replay-e2e.test.ts(192,42): error TS2345: Argument of type '"gpt-5.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-tool-result-images.test.ts(148,36): error TS2345: Argument of type '"gpt-5-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-tool-result-images.test.ts(156,35): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-tool-result-images.test.ts(166,44): error TS2345: Argument of type '"gpt-6-luna"' is not assignable to parameter of type 'never'.
+packages/ai/test/openai-responses-tool-result-images.test.ts(181,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/openrouter-cache-control-models.test.ts(13,40): error TS2345: Argument of type '"~anthropic/claude-fable-latest" | "~anthropic/claude-haiku-latest" | "~anthropic/claude-opus-latest" | "~anthropic/claude-sonnet-latest"' is not assignable to parameter of type 'never'.
+  Type '"~anthropic/claude-fable-latest"' is not assignable to type 'never'.
+packages/ai/test/openrouter-cache-control-models.test.ts(16,24): error TS2339: Property 'cacheControlFormat' does not exist on type 'never'.
+packages/ai/test/openrouter-cache-write-repro.test.ts(18,41): error TS2345: Argument of type '"google/gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/provider-error-body-regression.test.ts(181,44): error TS2345: Argument of type '"us.anthropic.claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/provider-error-body-regression.test.ts(207,44): error TS2345: Argument of type '"global.anthropic.claude-opus-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(73,36): error TS2345: Argument of type '"balanced"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(95,43): error TS2345: Argument of type '"gpt-4o"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(96,24): error TS2339: Property 'supportsStrictMode' does not exist on type 'never'.
+packages/ai/test/providers.test.ts(97,24): error TS2339: Property 'supportsOpenAIGrammarTools' does not exist on type 'never'.
+packages/ai/test/providers.test.ts(98,36): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(102,39): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(102,67): error TS2339: Property 'supportsStrictTools' does not exist on type 'never'.
+packages/ai/test/providers.test.ts(116,39): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(120,39): error TS2345: Argument of type '"claude-opus-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(121,44): error TS2345: Argument of type '"anthropic.claude-haiku-4-5-20251001-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(124,36): error TS2345: Argument of type '"gpt-4o"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(128,36): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(142,64): error TS2345: Argument of type '"gemini-3.6-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(143,64): error TS2345: Argument of type '"gemini-3.8-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(148,64): error TS2345: Argument of type '"gemini-3.1-pro-preview"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(154,65): error TS2345: Argument of type '"gemini-3.8-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/providers.test.ts(159,63): error TS2345: Argument of type '"gemma-4-31b-it"' is not assignable to parameter of type 'never'.
+packages/ai/test/radius-thinking-replay-e2e.test.ts(113,39): error TS2345: Argument of type '"claude-opus-5-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/radius-thinking-replay-e2e.test.ts(121,36): error TS2345: Argument of type '"claude-opus-5-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/radius-thinking-replay-e2e.test.ts(131,36): error TS2345: Argument of type '"claude-opus-5-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/responseid.test.ts(27,34): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/responseid.test.ts(40,41): error TS2345: Argument of type '"gemini-3-flash-preview"' is not assignable to parameter of type 'never'.
+packages/ai/test/responseid.test.ts(52,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/responseid.test.ts(65,34): error TS2345: Argument of type '"gpt-5-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/responseid.test.ts(73,37): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/responseid.test.ts(81,33): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/responseid.test.ts(91,35): error TS2345: Argument of type '"devstral-medium-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/responseid.test.ts(100,43): error TS2345: Argument of type '"gpt-5.3-codex"' is not assignable to parameter of type 'never'.
+packages/ai/test/responseid.test.ts(108,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/responseid.test.ts(116,41): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(352,34): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(385,41): error TS2345: Argument of type '"gemini-3-flash-preview"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(425,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(450,36): error TS2345: Argument of type '"deepseek-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(474,34): error TS2345: Argument of type '"gpt-5.4"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(502,39): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(522,33): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(544,31): error TS2345: Argument of type '"grok-4.7"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(568,32): error TS2345: Argument of type '"openai/gpt-oss-20b"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(592,36): error TS2345: Argument of type '"gpt-oss-120b"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(618,50): error TS2345: Argument of type '"@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(645,50): error TS2345: Argument of type '"workers-ai/@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(672,50): error TS2345: Argument of type '"gpt-5.1"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(705,50): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(736,39): error TS2345: Argument of type '"moonshotai/Kimi-K2.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(760,36): error TS2345: Argument of type '"moonshotai/Kimi-K3"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(788,35): error TS2345: Argument of type '"zai-org/GLM-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(813,34): error TS2345: Argument of type '"nvidia/nemotron-3.5-super-vl-120b-a12b"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(837,38): error TS2345: Argument of type '"z-ai/glm-4.5v"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(867,46): error TS2345: Argument of type '"google/gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(894,46): error TS2345: Argument of type '"anthropic/claude-opus-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(921,46): error TS2345: Argument of type '"openai/gpt-5.1-codex-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(946,31): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(974,35): error TS2345: Argument of type '"devstral-medium-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(989,36): error TS2345: Argument of type '"mistral-small-2603"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(994,36): error TS2345: Argument of type '"mistral-small-2603"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1000,35): error TS2345: Argument of type '"pixtral-12b"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1020,35): error TS2345: Argument of type '"MiniMax-M2.7"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1046,40): error TS2345: Argument of type '"kimi-for-coding"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1071,32): error TS2345: Argument of type '"muse-spark-1.3"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1097,35): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1128,49): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1159,50): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1190,50): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1221,44): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1252,55): error TS2345: Argument of type '"qwen3.8-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1281,46): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1309,36): error TS2345: Argument of type '"Ling-2.6-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1324,43): error TS2345: Argument of type '"Ring-2.6-1T"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1335,39): error TS2345: Argument of type '"claude-sonnet-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1363,39): error TS2345: Argument of type '"claude-opus-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1399,42): error TS2345: Argument of type '"gpt-6-luna"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1427,42): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1455,40): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1483,40): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1512,42): error TS2345: Argument of type '"global.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1540,42): error TS2345: Argument of type '"global.anthropic.claude-opus-4-6-v1"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1586,49): error TS2345: Argument of type '"global.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/stream.test.ts(1614,49): error TS2345: Argument of type '"global.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(6,39): error TS2345: Argument of type '"claude-opus-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(13,39): error TS2345: Argument of type '"claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(20,39): error TS2345: Argument of type '"claude-opus-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(27,39): error TS2345: Argument of type '"claude-opus-5-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(43,39): error TS2345: Argument of type '"claude-sonnet-5-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(60,39): error TS2345: Argument of type '"claude-sonnet-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(67,39): error TS2345: Argument of type '"claude-sonnet-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(74,39): error TS2345: Argument of type '"claude-fable-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(82,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(97,42): error TS2345: Argument of type '"gpt-5.6-luna" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-6-astra" | "gpt-6-luna" | "gpt-6-sol" | "gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+  Type '"gpt-5.6-luna"' is not assignable to type 'never'.
+packages/ai/test/supports-xhigh.test.ts(105,37): error TS2345: Argument of type '"gpt-5.6-luna" | "gpt-5.6-sol" | "gpt-5.6-terra" | "gpt-6-luna" | "gpt-6-sol"' is not assignable to parameter of type 'never'.
+  Type '"gpt-5.6-luna"' is not assignable to type 'never'.
+packages/ai/test/supports-xhigh.test.ts(119,62): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(133,37): error TS2345: Argument of type '"gpt-6-luna" | "gpt-6-sol" | "gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+  Type '"gpt-6-luna"' is not assignable to type 'never'.
+packages/ai/test/supports-xhigh.test.ts(161,36): error TS2345: Argument of type '"gpt-5.5-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(167,40): error TS2345: Argument of type '"openai/gpt-5.5-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(173,38): error TS2345: Argument of type '"deepseek-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(179,40): error TS2345: Argument of type '"deepseek/deepseek-v4.1-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(185,41): error TS2345: Argument of type '"deepseek-v4.1-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(191,41): error TS2345: Argument of type '"kimi-k2.7-code"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(191,86): error TS2345: Argument of type '"kimi-k2.7-code"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(200,36): error TS2345: Argument of type '"kimi-k3"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(206,41): error TS2345: Argument of type '"k3"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(212,41): error TS2345: Argument of type '"kimi-for-coding-highspeed"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(218,38): error TS2345: Argument of type '"grok-build-0.1"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(224,40): error TS2345: Argument of type '"deepseek/deepseek-v4-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(230,40): error TS2345: Argument of type '"anthropic/claude-opus-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(237,44): error TS2345: Argument of type '"global.anthropic.claude-opus-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(244,33): error TS2345: Argument of type '"grok-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/supports-xhigh.test.ts(250,44): error TS2345: Argument of type '"global.anthropic.claude-fable-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/together-models.test.ts(17,38): error TS2345: Argument of type '"moonshotai/Kimi-K3"' is not assignable to parameter of type 'never'.
+packages/ai/test/together-models.test.ts(46,39): error TS2345: Argument of type '"openai/gpt-oss-120b"' is not assignable to parameter of type 'never'.
+packages/ai/test/together-models.test.ts(61,43): error TS2345: Argument of type '"deepseek-ai/DeepSeek-V4-Pro-0813"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(88,34): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(96,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(109,34): error TS2345: Argument of type '"gpt-5.4-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(117,33): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(127,37): error TS2345: Argument of type '"claude-sonnet-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(135,31): error TS2345: Argument of type '"grok-4.3"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(143,32): error TS2345: Argument of type '"openai/gpt-oss-20b"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(165,49): error TS2345: Argument of type '"@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(173,49): error TS2345: Argument of type '"workers-ai/@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(181,39): error TS2345: Argument of type '"moonshotai/Kimi-K2.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(189,36): error TS2345: Argument of type '"moonshotai/Kimi-K3"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(197,35): error TS2345: Argument of type '"zai-org/GLM-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(205,31): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(213,35): error TS2345: Argument of type '"devstral-medium-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(221,35): error TS2345: Argument of type '"MiniMax-M2.7"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(229,39): error TS2345: Argument of type '"kimi-for-coding"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(237,32): error TS2345: Argument of type '"muse-spark-1.3"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(245,45): error TS2345: Argument of type '"google/gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(253,34): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(266,48): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(276,49): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(286,49): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(296,43): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(304,54): error TS2345: Argument of type '"qwen3.8-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(312,46): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(324,37): error TS2345: Argument of type '"claude-sonnet-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(340,44): error TS2345: Argument of type '"claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(349,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(360,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/tokens.test.ts(367,42): error TS2345: Argument of type '"global.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-id-normalization.test.ts(48,52): error TS2345: Argument of type '"gpt-6-luna"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-id-normalization.test.ts(49,51): error TS2345: Argument of type '"openai/gpt-5.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-id-normalization.test.ts(118,52): error TS2345: Argument of type '"gpt-6-luna"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-id-normalization.test.ts(119,48): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-id-normalization.test.ts(242,41): error TS2345: Argument of type '"openai/gpt-5.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-id-normalization.test.ts(268,43): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(99,36): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(107,64): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(120,36): error TS2345: Argument of type '"gpt-5-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(128,35): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(138,39): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(146,33): error TS2345: Argument of type '"grok-4.3"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(154,34): error TS2345: Argument of type '"openai/gpt-oss-20b"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(162,38): error TS2345: Argument of type '"gpt-oss-120b"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(170,51): error TS2345: Argument of type '"@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(178,51): error TS2345: Argument of type '"workers-ai/@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(186,41): error TS2345: Argument of type '"moonshotai/Kimi-K2.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(194,38): error TS2345: Argument of type '"moonshotai/Kimi-K3"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(202,37): error TS2345: Argument of type '"zai-org/GLM-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(210,33): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(218,37): error TS2345: Argument of type '"devstral-medium-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(226,37): error TS2345: Argument of type '"MiniMax-M2.7"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(234,36): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(242,50): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(250,51): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(258,51): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(266,45): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(274,56): error TS2345: Argument of type '"qwen3.8-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(282,48): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(290,41): error TS2345: Argument of type '"kimi-for-coding"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(298,47): error TS2345: Argument of type '"google/gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(306,44): error TS2345: Argument of type '"global.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(318,39): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(334,46): error TS2345: Argument of type '"claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(343,46): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/tool-call-without-result.test.ts(354,44): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(110,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(133,39): error TS2345: Argument of type '"claude-sonnet-4-6"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(160,66): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(184,36): error TS2345: Argument of type '"gpt-4o"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(203,35): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(228,36): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(248,32): error TS2345: Argument of type '"grok-4.3"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(270,34): error TS2345: Argument of type '"openai/gpt-oss-120b"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(293,38): error TS2345: Argument of type '"gpt-oss-120b"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(316,51): error TS2345: Argument of type '"@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(341,51): error TS2345: Argument of type '"workers-ai/@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(363,40): error TS2345: Argument of type '"moonshotai/Kimi-K2.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(382,37): error TS2345: Argument of type '"moonshotai/Kimi-K3"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(404,36): error TS2345: Argument of type '"zai-org/GLM-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(426,32): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(448,37): error TS2345: Argument of type '"devstral-medium-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(471,37): error TS2345: Argument of type '"MiniMax-M2.7"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(494,36): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(517,50): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(542,51): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(567,51): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(592,45): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(617,56): error TS2345: Argument of type '"qwen3.8-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(642,48): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(667,41): error TS2345: Argument of type '"kimi-for-coding"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(690,47): error TS2345: Argument of type '"google/gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(713,40): error TS2345: Argument of type '"anthropic/claude-sonnet-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(730,40): error TS2345: Argument of type '"deepseek/deepseek-chat"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(747,40): error TS2345: Argument of type '"mistralai/mistral-small-3.2-24b-instruct"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(764,40): error TS2345: Argument of type '"google/gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(781,40): error TS2345: Argument of type '"deepseek/deepseek-chat"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(804,44): error TS2345: Argument of type '"claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(821,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(846,44): error TS2345: Argument of type '"global.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/total-tokens.test.ts(869,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/transcript-tool-changes.test.ts(532,106): error TS2345: Argument of type '"k3"' is not assignable to parameter of type 'never'.
+packages/ai/test/transcript-tool-changes.test.ts(549,77): error TS2345: Argument of type '"k3" | "k3-256k" | "kimi-for-coding"' is not assignable to parameter of type 'never'.
+  Type '"k3"' is not assignable to type 'never'.
+packages/ai/test/transcript-tool-changes.test.ts(560,28): error TS2345: Argument of type '"kimi-for-coding-highspeed"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(287,34): error TS2345: Argument of type '"gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(303,34): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(319,34): error TS2345: Argument of type '"gpt-5-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(335,33): error TS2345: Argument of type '"gpt-4o-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(353,37): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(373,37): error TS2345: Argument of type '"claude-haiku-4-5"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(401,44): error TS2345: Argument of type '"claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(410,44): error TS2345: Argument of type '"claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(419,44): error TS2345: Argument of type '"claude-haiku-4.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(428,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(437,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(446,44): error TS2345: Argument of type '"claude-sonnet-4.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(453,31): error TS2345: Argument of type '"grok-4.3"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(469,32): error TS2345: Argument of type '"openai/gpt-oss-20b"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(485,36): error TS2345: Argument of type '"gpt-oss-120b"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(501,49): error TS2345: Argument of type '"@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(517,49): error TS2345: Argument of type '"workers-ai/@cf/moonshotai/kimi-k2.6"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(533,39): error TS2345: Argument of type '"moonshotai/Kimi-K2.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(549,36): error TS2345: Argument of type '"moonshotai/Kimi-K3"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(566,35): error TS2345: Argument of type '"zai-org/GLM-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(583,31): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(599,35): error TS2345: Argument of type '"devstral-medium-latest"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(615,35): error TS2345: Argument of type '"MiniMax-M2.7"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(631,34): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(649,49): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(672,50): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(695,50): error TS2345: Argument of type '"mimo-v2.6-pro"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(716,43): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(732,54): error TS2345: Argument of type '"qwen3.8-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(748,46): error TS2345: Argument of type '"qwen3.7-max"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(764,39): error TS2345: Argument of type '"kimi-for-coding"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(780,45): error TS2345: Argument of type '"google/gemini-2.5-flash"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(796,42): error TS2345: Argument of type '"global.anthropic.claude-sonnet-4-5-20250929-v1:0"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(816,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(825,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/unicode-surrogate.test.ts(834,42): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/ai/test/xai-responses.test.ts(131,11): error TS18046: 'model' is of type 'unknown'.
+packages/ai/test/xai-responses.test.ts(131,22): error TS18046: 'model' is of type 'unknown'.
+packages/ai/test/xai-responses.test.ts(133,37): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.5"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.5' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/xai-responses.test.ts(134,37): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.6"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.6' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/xai-responses.test.ts(135,37): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.7"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.7' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/xai-responses.test.ts(136,37): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.3"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.3' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/xai-responses.test.ts(140,10): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.7"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.7' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/xai-responses.test.ts(166,4): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.5"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.5' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/xai-responses.test.ts(204,4): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.5"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.5' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/xai-responses.test.ts(219,4): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.7"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.7' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/xai-responses.test.ts(242,4): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.3"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.3' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/xai-responses.test.ts(269,7): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.5"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.5' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/xai-responses.test.ts(285,4): error TS7053: Element implicitly has an 'any' type because expression of type '"grok-4.5"' can't be used to index type 'ChatModelCatalog<unknown, "xai">'.
+  Property 'grok-4.5' does not exist on type 'ChatModelCatalog<unknown, "xai">'.
+packages/ai/test/xhigh.test.ts(21,37): error TS2345: Argument of type '"gpt-5.5"' is not assignable to parameter of type 'never'.
+packages/ai/test/xhigh.test.ts(40,37): error TS2345: Argument of type '"gpt-5-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/xhigh.test.ts(53,65): error TS2345: Argument of type '"gpt-5-mini"' is not assignable to parameter of type 'never'.
+packages/ai/test/zai-coding-plan-models.test.ts(5,49): error TS2345: Argument of type '"glm-4.6v"' is not assignable to parameter of type 'never'.
+packages/ai/test/zai-coding-plan-models.test.ts(26,32): error TS2345: Argument of type '"glm-5.2"' is not assignable to parameter of type 'never'.
+packages/ai/test/zai-coding-plan-models.test.ts(33,36): error TS2345: Argument of type '"glm-5.3"' is not assignable to parameter of type 'never'.
+packages/ai/test/zai-coding-plan-models.test.ts(45,32): error TS2345: Argument of type '"glm-5.2-highspeed"' is not assignable to parameter of type 'never'.
+packages/ai/test/zai-coding-plan-models.test.ts(48,36): error TS2345: Argument of type '"glm-5.3-highspeed"' is not assignable to parameter of type 'never'.
+packages/ai/test/zen.test.ts(15,20): error TS18046: 'model' is of type 'unknown'.
+packages/coding-agent/examples/sdk/12-full-control.ts(25,37): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-auto-compaction-queue.test.ts(25,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-branching.test.ts(48,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-compaction.test.ts(49,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-concurrent.test.ts(71,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-concurrent.test.ts(182,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-concurrent.test.ts(293,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-concurrent.test.ts(337,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-concurrent.test.ts(484,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-dynamic-provider.test.ts(16,43): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-dynamic-provider.test.ts(73,33): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-dynamic-tools.test.ts(64,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-dynamic-tools.test.ts(131,33): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-dynamic-tools.test.ts(181,33): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-dynamic-tools.test.ts(241,33): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-retry.test.ts(70,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-retry.test.ts(204,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-retry.test.ts(256,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/agent-session-stats.test.ts(18,37): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/builtin-tool-strict-mode.test.ts(80,35): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/cache-warmer.test.ts(34,34): error TS2345: Argument of type '"claude-opus-4-6"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/cache-warmer.test.ts(38,34): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/cache-warmer.test.ts(42,31): error TS2345: Argument of type '"gpt-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/compaction-extensions.test.ts(89,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/compaction.test.ts(606,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/compaction.test.ts(627,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/default-tools-setting.test.ts(49,34): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/default-tools-setting.test.ts(231,35): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/default-tools-setting.test.ts(353,35): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/default-tools-setting.test.ts(464,33): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/export-jsonl-share.test.ts(31,33): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/model-resolver.test.ts(798,40): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/model-resolver.test.ts(799,38): error TS2345: Argument of type '"claude-opus-4-8"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/rpc-prompt-response-semantics.test.ts(97,55): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/sdk-codex-cache-probe-tool-loop.ts(284,41): error TS2345: Argument of type '"gpt-6.1-sol"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/sdk-session-manager.test.ts(29,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/sdk-session-manager.test.ts(50,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/sdk-session-manager.test.ts(68,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/sdk-session-manager.test.ts(97,39): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/suite/regressions/2835-tools-allowlist-filters-extension-tools.test.ts(58,33): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/suite/regressions/3592-no-builtin-tools-keeps-extension-tools.test.ts(62,33): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/suite/regressions/3592-no-builtin-tools-keeps-extension-tools.test.ts(110,33): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/system-prompt-updates.test.ts(64,34): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/tool-renderer-examples.test.ts(55,33): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/coding-agent/test/utilities.ts(257,38): error TS2345: Argument of type '"claude-sonnet-4-5"' is not assignable to parameter of type 'never'.
+packages/durable/src/harness/live.ts(150,2): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Type '"conversation"' is not assignable to type '"task"'.
+packages/durable/src/harness/live.ts(173,32): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'SessionDocFamilyToken<RunReceiptState, null>' is not assignable to parameter of type 'TaskDocFamilyToken<RunReceiptState, null>'.
+      Type 'Omit<CommonDocDefinition<RunReceiptState>, "initial"> & { readonly scope: "session"; readonly history?: undefined; readonly fork?: undefined; } & { ...; } & { ...; }' is not assignable to type 'Omit<CommonDocDefinition<RunReceiptState>, "initial"> & { readonly scope: "task"; readonly history?: undefined; readonly fork?: undefined; } & { ...; } & { ...; }'.
+        Type 'Omit<CommonDocDefinition<RunReceiptState>, "initial"> & { readonly scope: "session"; readonly history?: undefined; readonly fork?: undefined; } & { ...; } & { ...; }' is not assignable to type '{ readonly scope: "task"; readonly history?: undefined; readonly fork?: undefined; }'.
+          Types of property 'scope' are incompatible.
+            Type '"session"' is not assignable to type '"task"'.
+packages/durable/test/yonder-fork.test.ts(146,35): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'SessionDocFamilyToken<RunReceiptState, null>' is not assignable to parameter of type 'TaskDocFamilyToken<RunReceiptState, null>'.
+      Type 'Omit<CommonDocDefinition<RunReceiptState>, "initial"> & { readonly scope: "session"; readonly history?: undefined; readonly fork?: undefined; } & { ...; } & { ...; }' is not assignable to type 'Omit<CommonDocDefinition<RunReceiptState>, "initial"> & { readonly scope: "task"; readonly history?: undefined; readonly fork?: undefined; } & { ...; } & { ...; }'.
+        Type 'Omit<CommonDocDefinition<RunReceiptState>, "initial"> & { readonly scope: "session"; readonly history?: undefined; readonly fork?: undefined; } & { ...; } & { ...; }' is not assignable to type '{ readonly scope: "task"; readonly history?: undefined; readonly fork?: undefined; }'.
+          Types of property 'scope' are incompatible.
+            Type '"session"' is not assignable to type '"task"'.
+packages/durable/test/yonder-fork.test.ts(190,35): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Argument of type 'SessionDocFamilyToken<RunReceiptState, null>' is not assignable to parameter of type 'TaskDocFamilyToken<RunReceiptState, null>'.
+      Type 'Omit<CommonDocDefinition<RunReceiptState>, "initial"> & { readonly scope: "session"; readonly history?: undefined; readonly fork?: undefined; } & { ...; } & { ...; }' is not assignable to type 'Omit<CommonDocDefinition<RunReceiptState>, "initial"> & { readonly scope: "task"; readonly history?: undefined; readonly fork?: undefined; } & { ...; } & { ...; }'.
+        Type 'Omit<CommonDocDefinition<RunReceiptState>, "initial"> & { readonly scope: "session"; readonly history?: undefined; readonly fork?: undefined; } & { ...; } & { ...; }' is not assignable to type '{ readonly scope: "task"; readonly history?: undefined; readonly fork?: undefined; }'.
+          Types of property 'scope' are incompatible.
+            Type '"session"' is not assignable to type '"task"'.

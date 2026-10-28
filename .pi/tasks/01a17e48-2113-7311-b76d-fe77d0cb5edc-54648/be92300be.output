@@ -1,0 +1,47 @@
+
+> pi-monorepo@0.0.3 check
+> node scripts/biome-check.mjs --write && npm run check:pinned-deps && npm run check:runtime-deps && npm run check:ts-imports && npm run check:entry-graphs && npm run check:install-lock:coding-agent && tsc --noEmit && npm run check:browser-smoke
+
+Checked 1546 files in 6s. Fixed 8 files.
+
+> pi-monorepo@0.0.3 check:pinned-deps
+> node scripts/check-pinned-deps.mjs
+
+
+> pi-monorepo@0.0.3 check:runtime-deps
+> node scripts/check-runtime-deps.mjs
+
+Public package runtime imports have declared dependencies.
+
+> pi-monorepo@0.0.3 check:ts-imports
+> node scripts/check-ts-relative-imports.mjs
+
+
+> pi-monorepo@0.0.3 check:entry-graphs
+> node scripts/check-entry-graphs.mjs
+
+packages/ai export "./models" reaches 22 files, budget 20
+    packages/ai/src/models.ts
+    packages/ai/src/utils/model-operations.ts
+    packages/ai/src/utils/models-error.ts
+    packages/ai/src/utils/diagnostics.ts
+    packages/ai/src/telemetry.ts
+    packages/telemetry/src/index.ts
+    packages/telemetry/src/memory.ts
+    packages/telemetry/src/noop.ts
+    packages/telemetry/src/metrics.ts
+    packages/ai/src/auth/resolve.ts
+    packages/ai/src/auth/context.ts
+    packages/ai/src/utils/provider-env.ts
+    packages/ai/src/utils/abort.ts
+    packages/ai/src/utils/transcript.ts
+    packages/ai/src/utils/text.ts
+    packages/ai/src/utils/identity.ts
+    packages/ai/src/utils/version.ts
+    packages/ai/src/models-store.ts
+    packages/ai/src/auth/credential-store.ts
+    packages/ai/src/api/lazy.ts
+    packages/ai/src/utils/event-stream.ts
+    packages/ai/src/utils/observation.ts
+
+1 entry-point budget violation(s).

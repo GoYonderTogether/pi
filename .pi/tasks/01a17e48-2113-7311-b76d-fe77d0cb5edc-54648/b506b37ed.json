@@ -1,0 +1,27 @@
+{
+  "id": "b506b37ed",
+  "name": "构建离线依赖",
+  "command": "cd /Users/zoran/Documents/github/yonder-pi-1.4 && npm run build:offline",
+  "status": "completed",
+  "outputPath": ".pi/tasks/01a17e48-2113-7311-b76d-fe77d0cb5edc-54648/b506b37ed.output",
+  "cwd": "/Users/zoran/Documents/github/yonder-pi",
+  "startTime": 1793120875780,
+  "endTime": 1793120881660,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 79268,
+  "bytesWritten": 2135,
+  "isAgent": false,
+  "surviveReload": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "shellPolicy": {
+    "policy": "inherit",
+    "executable": "/bin/zsh",
+    "argvPrefix": [
+      "-c"
+    ],
+    "dialect": "posix"
+  }
+}

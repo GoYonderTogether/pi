@@ -1,0 +1,5 @@
+
+> @earendil-works/pi-env@1.4.0 build:daemon
+> cargo build --manifest-path daemon/Cargo.toml --locked
+
+    Updating crates.io index

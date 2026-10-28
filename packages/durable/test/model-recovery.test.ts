@@ -38,8 +38,8 @@ test("exhaustion preserves the last error and does not claim a content error exh
 
 test.each(["503 Service Unavailable", "request timed out"])("retries before falling back on %s", (errorMessage) => {
 	const message = { ...failed, errorMessage };
-	expect(modelRecovery(message, policy, 3, true, fallback, 0, 3).advance).toBe(false);
-	expect(modelRecovery(message, policy, 4, true, fallback, 0, 4).advance).toBe(true);
+	expect(modelRecovery(message, policy, 2, true, fallback, 0, 2).advance).toBe(false);
+	expect(modelRecovery(message, policy, 3, true, fallback, 0, 3).advance).toBe(true);
 });
 
 test.each(["400 invalid request", "content policy violation"])("stops without falling back on %s", (errorMessage) => {

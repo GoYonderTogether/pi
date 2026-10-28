@@ -721,6 +721,9 @@ const streamWithEffort = (
 			stream.push({ type: "done", reason: output.stopReason, message: output });
 			stream.end();
 		} catch (error) {
+			const responseError = error as { status?: unknown; headers?: unknown };
+			if (typeof responseError?.status === "number" && responseError.headers instanceof Headers)
+				await options?.onResponse?.({ status: responseError.status, headers: headersToRecord(responseError.headers) }, model);
 			for (const block of output.content) {
 				if (block.type === "thinking") {
 					applyStreamedReasoningDetails(block);

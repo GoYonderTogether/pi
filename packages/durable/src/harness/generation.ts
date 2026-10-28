@@ -482,7 +482,16 @@ async function streamResponse(
 			});
 	};
 	try {
-		const events = runtime.models.streamSimple(model, { messages: [...messages] }, options);
+		let resetHeaders: Record<string, string> | undefined;
+		const events = runtime.models.streamSimple(model, { messages: [...messages] }, {
+			...options,
+			onResponse: async (response, responseModel) => {
+				await options.onResponse?.(response, responseModel);
+				if (response.status === 429) resetHeaders = Object.fromEntries(
+					Object.entries(response.headers).filter(([key]) => /^(retry-after|retry-after-ms|x-ratelimit-reset)$/i.test(key)),
+				);
+			},
+		});
 		for await (const event of events) {
 			// A partial without content, such as pi-ai's opening `start` event, shows nothing; a deferred response
 			// never gets past it, so it never leaves a partial.
@@ -490,7 +499,10 @@ async function streamResponse(
 			pending = event.partial;
 			if (timer === undefined && inFlight === undefined) timer = setTimeout(flush, interval);
 		}
-		return await events.result();
+		const result = await events.result();
+		if (result.stopReason === "error" && resetHeaders && Object.keys(resetHeaders).length)
+			result.errorMessage = `${result.errorMessage ?? "429"}\nrate_limit_headers: ${JSON.stringify(resetHeaders)}`;
+		return result;
 	} finally {
 		stopped = true;
 		clearTimeout(timer);

@@ -183,8 +183,7 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 			let resetHeaders: Record<string, string> | undefined;
 			const options: SimpleStreamOptions = {
 				...forwarded,
-				onResponse: async (response, responseModel) => {
-					await forwarded.onResponse?.(response, responseModel);
+				onResponse: async (response) => {
 					if (response.status === 429) resetHeaders = Object.fromEntries(
 						Object.entries(response.headers).filter(([key]) => /^(retry-after|retry-after-ms|x-ratelimit-reset)$/i.test(key)),
 					);

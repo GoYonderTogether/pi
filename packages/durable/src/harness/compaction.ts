@@ -180,8 +180,15 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 			];
 			const { deferred: _deferred, ...forwarded } = streamOptions;
 			const fallback = request.fallback;
+			let resetHeaders: Record<string, string> | undefined;
 			const options: SimpleStreamOptions = {
 				...forwarded,
+				onResponse: async (response, responseModel) => {
+					await forwarded.onResponse?.(response, responseModel);
+					if (response.status === 429) resetHeaders = Object.fromEntries(
+						Object.entries(response.headers).filter(([key]) => /^(retry-after|retry-after-ms|x-ratelimit-reset)$/i.test(key)),
+					);
+				},
 				maxRetries: 0,
 				cacheRetention: "none",
 				maxTokens,
@@ -197,6 +204,8 @@ export const CompactionTask = defineTask<CompactionInput, CompactionCheckpoint, 
 				() => runtime.models.completeSimple(model, { messages }, options),
 				context,
 			);
+			if (message.stopReason === "error" && resetHeaders && Object.keys(resetHeaders).length)
+				message.errorMessage = `${message.errorMessage ?? "429"}\nrate_limit_headers: ${JSON.stringify(resetHeaders)}`;
 			// An abort mark or close: the abort invocation or the reopened task handles the committed state.
 			runtime.signal.throwIfAborted();
 			const summary = summaryText(message);

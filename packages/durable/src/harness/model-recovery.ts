@@ -24,5 +24,7 @@ export function modelRecovery(
 			? `Model fallback chain exhausted (${fallback.after} consecutive failures per model): ${lastError}`
 			: `Model retries exhausted (${policy.maxRetries} retries): ${lastError}`
 		: lastError;
-	return { retry, advance, error, delay: retry ? retryDelayMs(policy, attempt) : 0 };
+	// Backoff counts the failures of the model being retried, not the attempts of the whole run: with a chain the
+	// run-level attempt keeps growing across models, so a later candidate waits minutes for its first retry.
+	return { retry, advance, error, delay: retry ? retryDelayMs(policy, fallback ? failures : attempt) : 0 };
 }

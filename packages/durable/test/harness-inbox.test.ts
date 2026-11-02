@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { Op } from "@earendil-works/chord/delta";
 import {
 	type AssistantMessage,
+	createModels,
 	type FauxResponseStep,
 	fauxAssistantMessage,
 	fauxText,
@@ -14,11 +15,12 @@ import {
 } from "@earendil-works/pi-ai";
 import {
 	type Conversation,
+	createRegistry,
 	defineDoc,
 	defineTool,
 	type EntryRecord,
 	GenerationTask,
-	type Harness,
+	Harness,
 	InboxDoc,
 	type InboxState,
 	LiveDoc,
@@ -31,8 +33,11 @@ import {
 	UsageDoc,
 } from "@earendil-works/pi-durable";
 import { afterEach, describe, expect, it } from "vitest";
+import { applyBoundary, type Boundary } from "../src/harness/inbox.ts";
+import { admitSubmission } from "../src/harness/submissions.ts";
 import { recordUsage } from "../src/harness/usage.ts";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
+import type { TaskId } from "../src/types.ts";
 import { allEntries, type ChatSetup, chatSetup, openChat, textOf, waitFor } from "./chat-support.ts";
 import { addHooks, addTool } from "./harness-support.ts";
 import { ControlledStorage, context, documentChanges } from "./session-support.ts";
@@ -77,6 +82,13 @@ function holdTool(setup: ChatSetup, gate: Deferred, result: ToolExecutionResult 
 	);
 }
 
+async function openInboxHarness() {
+	const storage = new MemoryStorage();
+	const harness = await Harness.open(storage, { models: createModels(), registry: createRegistry() }, context);
+	const root = await harness.root(context);
+	return { harness, root, storage };
+}
+
 /** A write that affects model context, so it queues while busy; a data-only write would be appended at once. */
 function queuedNote(text: string) {
 	return { kind: "note", model: [{ role: "user", content: text, timestamp: 0 }] } as const;
@@ -108,104 +120,214 @@ async function toolRunning(harness: Harness, root: Conversation): Promise<void> 
 }
 
 describe("inbox", () => {
-	it("keeps a foreign steer behind the active source and starts each queued origin separately", async () => {
-		const setup = chatSetup();
-		const first = gated(answer("A answered"));
-		setup.faux.setResponses([first.step, answer("B answered"), answer("C answered")]);
-		const { harness, root } = await openChat(new MemoryStorage(), setup);
-		const a = await root.submit({ type: "input", content: "A request", sourceGroup: "conv:A" }, context);
-		await first.reached;
-		const b = await root.submit(
-			{ type: "input", content: "B request", whenBusy: "steer", sourceGroup: "conv:B" },
-			context,
-		);
-		const c = await root.submit(
-			{ type: "input", content: "C request", whenBusy: "steer", sourceGroup: "conv:C" },
-			context,
-		);
-		first.release();
-		await c.wait(context);
-		const entries = await allEntries(root);
-		const answers = entries.filter((entry) => entry.kind === "pi.assistant");
-		expect(transcript(entries)).toEqual([
-			"pi.user:A request",
-			"pi.assistant:A answered",
-			"pi.user:B request",
-			"pi.assistant:B answered",
-			"pi.user:C request",
-			"pi.assistant:C answered",
+	it("selects one original source group at a time across postTools and final boundaries", async () => {
+		const { harness, root } = await openInboxHarness();
+		let a: SubmissionRecord["id"] | undefined;
+		let b: SubmissionRecord["id"] | undefined;
+		let c: SubmissionRecord["id"] | undefined;
+		let results: Awaited<ReturnType<typeof applyBoundary>>[] = [];
+		await root.commit(async (tx) => {
+			const inbox = await tx.doc(InboxDoc, root.id);
+			const head = (await tx.latestHeadMarker(root.id))?.head;
+			for (const [group, text] of [
+				["conv:A", "A"],
+				["conv:B", "B"],
+				["conv:C", "C"],
+			]) {
+				const submission = await tx.createSubmission({
+					conversationId: root.id,
+					type: "input",
+					status: "queued",
+					sourceGroup: group,
+				});
+				if (group === "conv:A") a = submission.id;
+				if (group === "conv:B") b = submission.id;
+				if (group === "conv:C") c = submission.id;
+				inbox.items.push({
+					id: submission.id,
+					mode: "steer",
+					sourceGroup: group,
+					content: [{ type: "text", text }],
+				});
+			}
+			let boundary: Boundary = {
+				conversationId: root.id,
+				inbox,
+				steeringMode: "all",
+				followUpMode: "all",
+				activeSourceGroup: "conv:A",
+				head,
+			};
+			results = [await applyBoundary(tx, boundary, "postTools", 1)];
+			boundary = { ...boundary, activeSourceGroup: results[0]!.sourceGroup };
+			results.push(await applyBoundary(tx, boundary, "final", 2));
+			results.push(await applyBoundary(tx, boundary, "final", 3));
+		}, context);
+		if (a === undefined || b === undefined || c === undefined) throw new Error("Expected all source submissions");
+		expect(results.map(({ users, sourceGroup }) => [users, sourceGroup])).toEqual([
+			[[a], "conv:A"],
+			[[b], "conv:B"],
+			[[c], "conv:C"],
 		]);
-		expect(await status(a)).toMatchObject({ status: "done", answer: answers[0]!.id });
-		expect(await status(b)).toMatchObject({ status: "done", answer: answers[1]!.id });
-		expect(await status(c)).toMatchObject({ status: "done", answer: answers[2]!.id });
-		expect(setup.faux.state.callCount).toBe(3);
+		expect((await harness.snapshot(InboxDoc, root.id, context))?.items).toEqual([]);
 		await harness.close(context);
 	});
 
-	it("admits only same-source steers at postTools while retaining foreign inputs for a later run", async () => {
-		const setup = chatSetup();
-		const gate = deferred();
-		holdTool(setup, gate);
-		setup.faux.setResponses([HOLD, answer("A follow-up"), answer("B reply")]);
-		const { harness, root } = await openChat(new MemoryStorage(), setup);
-		const a = await root.submit({ type: "input", content: "A", sourceGroup: "conv:A" }, context);
-		await toolRunning(harness, root);
-		expect(await status(a)).toMatchObject({ sourceGroup: "conv:A" });
-		expect(await harness.snapshot(LiveDoc, root.id, context)).toMatchObject({ run: { sourceGroup: "conv:A" } });
-		const b = await root.submit({ type: "input", content: "B", whenBusy: "steer", sourceGroup: "conv:B" }, context);
-		const same = await root.submit(
-			{ type: "input", content: "A continuation", whenBusy: "steer", sourceGroup: "conv:A" },
-			context,
-		);
-		expect(
-			(await harness.snapshot(InboxDoc, root.id, context))?.items.map((item) => [
-				item.mode,
-				item.mode === "write" ? undefined : item.sourceGroup,
-			]),
-		).toEqual([
-			["steer", "conv:B"],
-			["steer", "conv:A"],
+	it("keeps ordinary foreign steers queued while selecting a same-source steer", async () => {
+		const { harness, root } = await openInboxHarness();
+		const ids: SubmissionRecord["id"][] = [];
+		let result: Awaited<ReturnType<typeof applyBoundary>> | undefined;
+		await root.commit(async (tx) => {
+			const inbox = await tx.doc(InboxDoc, root.id);
+			const head = (await tx.latestHeadMarker(root.id))?.head;
+			for (const [group, text] of [
+				["conv:B", "B"],
+				["conv:A", "A follow-up"],
+			]) {
+				const submission = await tx.createSubmission({
+					conversationId: root.id,
+					type: "input",
+					status: "queued",
+					sourceGroup: group,
+				});
+				ids.push(submission.id);
+				inbox.items.push({
+					id: submission.id,
+					mode: "steer",
+					sourceGroup: group,
+					content: [{ type: "text", text }],
+				});
+			}
+			result = await applyBoundary(
+				tx,
+				{
+					conversationId: root.id,
+					inbox,
+					steeringMode: "all",
+					followUpMode: "all",
+					activeSourceGroup: "conv:A",
+					head,
+				},
+				"postTools",
+				1,
+			);
+		}, context);
+		expect(result).toMatchObject({ users: [ids[1]], sourceGroup: "conv:A", reset: false });
+		expect((await harness.snapshot(InboxDoc, root.id, context))?.items).toMatchObject([
+			{ id: ids[0], mode: "steer", sourceGroup: "conv:B" },
 		]);
-		gate.resolve();
-		await b.wait(context);
-		const entries = await allEntries(root);
-		const answers = entries.filter((entry) => entry.kind === "pi.assistant");
-		expect(transcript(entries)).toEqual([
-			"pi.user:A",
-			"pi.assistant",
-			"pi.tool-result",
-			"pi.user:A continuation",
-			"pi.assistant:A follow-up",
-			"pi.user:B",
-			"pi.assistant:B reply",
-		]);
-		expect(await status(a)).toMatchObject({ status: "done", answer: answers[1]!.id });
-		expect(await status(same)).toMatchObject({ status: "done", answer: answers[1]!.id });
-		expect(await status(b)).toMatchObject({ status: "done", answer: answers[2]!.id });
-		expect(setup.faux.state.callCount).toBe(3);
 		await harness.close(context);
 	});
 
-	it("keeps explicit interrupt cancellation across source groups", async () => {
-		const setup = chatSetup();
-		const first = gated(answer("must not settle"));
-		setup.faux.setResponses([first.step, answer("A resumed"), answer("B reply")]);
-		const { harness, root } = await openChat(new MemoryStorage(), setup);
-		const active = await root.submit({ type: "input", content: "A", sourceGroup: "conv:A" }, context);
-		await first.reached;
-		const interrupt = await root.submit(
-			{ type: "input", content: "B", whenBusy: "interrupt", sourceGroup: "conv:B" },
-			context,
-		);
-		expect(await harness.snapshot(LiveDoc, root.id, context)).toMatchObject({ run: { resumeOnInterrupt: true } });
-		await interrupt.wait(context);
-		expect(await status(active)).toMatchObject({ status: "done" });
-		expect(await status(interrupt)).toMatchObject({ status: "done" });
-		expect(transcript(await allEntries(root))).toEqual([
-			"pi.user:A",
-			"pi.assistant:A resumed",
-			"pi.user:B",
-			"pi.assistant:B reply",
+	it("persists explicit interrupts and admits them across groups without changing the active source", async () => {
+		const { harness, root, storage } = await openInboxHarness();
+		let interruptId: SubmissionRecord["id"] | undefined;
+		let sameGroupId: SubmissionRecord["id"] | undefined;
+		let result: Awaited<ReturnType<typeof applyBoundary>> | undefined;
+		await root.commit(async (tx) => {
+			const live = await tx.doc(LiveDoc, root.id);
+			live.run = { taskId: 1 as TaskId, inputs: [], sourceGroup: "conv:A" };
+			const inbox = await tx.doc(InboxDoc, root.id);
+			const head = (await tx.latestHeadMarker(root.id))?.head;
+			interruptId = await admitSubmission(
+				tx,
+				root.id,
+				{
+					type: "input",
+					content: [{ type: "text", text: "B interrupt" }],
+					whenBusy: "interrupt",
+					sourceGroup: "conv:B",
+				},
+				1,
+				{ steeringMode: "all", followUpMode: "all" },
+			);
+			expect(inbox.items.find((item) => item.id === interruptId)).toMatchObject({
+				id: interruptId,
+				mode: "steer",
+				interrupt: true,
+				sourceGroup: "conv:B",
+			});
+			sameGroupId = await admitSubmission(
+				tx,
+				root.id,
+				{
+					type: "input",
+					content: [{ type: "text", text: "C same source" }],
+					whenBusy: "steer",
+					sourceGroup: "conv:A",
+				},
+				2,
+				{ steeringMode: "all", followUpMode: "all" },
+			);
+			result = await applyBoundary(
+				tx,
+				{
+					conversationId: root.id,
+					inbox,
+					steeringMode: "all",
+					followUpMode: "all",
+					activeSourceGroup: "conv:A",
+					head,
+				},
+				"postTools",
+				3,
+			);
+			delete live.run;
+		}, context);
+		if (!interruptId || !sameGroupId) throw new Error("Expected both interrupt and same-source submissions");
+		expect(result).toMatchObject({ users: [interruptId, sameGroupId], sourceGroup: "conv:A", reset: false });
+		expect(await storage.submission(interruptId, context)).toMatchObject({ status: "placed", sourceGroup: "conv:B" });
+		expect((await harness.snapshot(InboxDoc, root.id, context))?.items).toEqual([]);
+		await harness.close(context);
+	});
+
+	it("applies steeringMode one-at-a-time to eligible same-source steers and explicit interrupts in inbox order", async () => {
+		const { harness, root } = await openInboxHarness();
+		let ids: SubmissionRecord["id"][] = [];
+		let result: Awaited<ReturnType<typeof applyBoundary>> | undefined;
+		await root.commit(async (tx) => {
+			const inbox = await tx.doc(InboxDoc, root.id);
+			const head = (await tx.latestHeadMarker(root.id))?.head;
+			const interrupt = await tx.createSubmission({
+				conversationId: root.id,
+				type: "input",
+				status: "queued",
+				sourceGroup: "conv:B",
+			});
+			const same = await tx.createSubmission({
+				conversationId: root.id,
+				type: "input",
+				status: "queued",
+				sourceGroup: "conv:A",
+			});
+			ids = [interrupt.id, same.id];
+			inbox.items.push(
+				{
+					id: interrupt.id,
+					mode: "steer",
+					interrupt: true,
+					sourceGroup: "conv:B",
+					content: [{ type: "text", text: "B interrupt" }],
+				},
+				{ id: same.id, mode: "steer", sourceGroup: "conv:A", content: [{ type: "text", text: "A same-source" }] },
+			);
+			result = await applyBoundary(
+				tx,
+				{
+					conversationId: root.id,
+					inbox,
+					steeringMode: "one-at-a-time",
+					followUpMode: "all",
+					activeSourceGroup: "conv:A",
+					head,
+				},
+				"postTools",
+				1,
+			);
+		}, context);
+		expect(result).toMatchObject({ users: [ids[0]], sourceGroup: "conv:A" });
+		expect((await harness.snapshot(InboxDoc, root.id, context))?.items).toMatchObject([
+			{ id: ids[1], mode: "steer", sourceGroup: "conv:A" },
 		]);
 		await harness.close(context);
 	});

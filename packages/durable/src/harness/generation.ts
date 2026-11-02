@@ -28,7 +28,7 @@ import type {
 } from "../types.ts";
 import { addTools } from "./agent.ts";
 import { createCompaction, estimateContext, selectCut } from "./compaction.ts";
-import { applyBoundary, prepareBoundary } from "./inbox.ts";
+import { applyBoundary, hasQueuedReset, prepareBoundary } from "./inbox.ts";
 import { assignJson } from "./json.ts";
 import { endRun, LiveDoc, type LiveState, type ToolSlot } from "./live.ts";
 import { abortModelObservation, type ObservationCheckpoint, observeModelAttempt } from "./model-observation.ts";
@@ -664,7 +664,11 @@ async function answer(runtime: Runtime, message: AssistantMessage, context: Cont
 		const boundary = await prepareBoundary(tx, conversationId, runtime.settings);
 		const live = await tx.doc(LiveDoc, conversationId);
 		if (
-			boundary.inbox.items.some((item) => item.mode === "steer" && item.sourceGroup === boundary.activeSourceGroup)
+			!hasQueuedReset(boundary.inbox.items) &&
+			boundary.inbox.items.some(
+				(item) =>
+					item.mode === "steer" && (item.interrupt === true || item.sourceGroup === boundary.activeSourceGroup),
+			)
 		) {
 			const superseded = await appendAssistant(tx, conversationId, { ...message, stopReason: "aborted" });
 			const { users, reset, sourceGroup } = await applyBoundary(tx, boundary, "postTools", runtime.now());

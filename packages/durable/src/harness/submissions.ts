@@ -238,6 +238,7 @@ export async function admitSubmission(
 				mode,
 				content,
 				...(draft.sourceGroup === undefined ? {} : { sourceGroup: draft.sourceGroup }),
+				...(draft.whenBusy === "interrupt" ? { interrupt: true } : {}),
 				...entry,
 			});
 		}

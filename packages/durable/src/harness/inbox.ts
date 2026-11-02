@@ -12,6 +12,7 @@ export type InboxItem =
 			mode: "steer" | "followUp";
 			content: JsonRepresentation<UserInput>;
 			sourceGroup?: string;
+			interrupt?: true;
 			entry?: JsonRepresentation<InputEntry>;
 	  }
 	/** `entry` is an `EntryDraft`, stored as plain JSON. */
@@ -39,7 +40,7 @@ export type Boundary = {
 	readonly inbox: Draft<InboxState>;
 	readonly steeringMode: QueueMode;
 	readonly followUpMode: QueueMode;
-	/** Source of the active run; only matching steers may join it at `postTools`. */
+	/** Source of the active run; matching steers and explicit interrupts may join at `postTools`. */
 	readonly activeSourceGroup?: string;
 	/** Start of the active range, the newest head marker's `head`; advanced by heads written in this commit. */
 	head: EntryId | undefined;
@@ -85,14 +86,21 @@ export async function applyBoundary(
 	const final = at === "final" || reset;
 	const firstUser = items.find((item) => item.mode !== "write");
 	const sourceGroup = final ? firstUser?.sourceGroup : boundary.activeSourceGroup;
-	const pick = (mode: "steer" | "followUp", queueMode: QueueMode): number[] => {
-		const indexes = items.flatMap((item, index) =>
-			item.mode === mode && item.sourceGroup === sourceGroup ? [index] : [],
-		);
+	const pick = (mode: "steer" | "followUp", queueMode: QueueMode, allowForeignInterrupt = false): number[] => {
+		const indexes = items.flatMap((item, index) => {
+			if (item.mode !== mode) return [];
+			return item.sourceGroup === sourceGroup ||
+				(mode === "steer" && allowForeignInterrupt && item.interrupt === true)
+				? [index]
+				: [];
+		});
 		return queueMode === "all" ? indexes : indexes.slice(0, 1);
 	};
 	const writes = items.flatMap((item, index) => (item.mode === "write" ? [index] : []));
-	const users = [...pick("steer", boundary.steeringMode), ...(final ? pick("followUp", boundary.followUpMode) : [])];
+	const users = [
+		...pick("steer", boundary.steeringMode, at === "postTools" && !reset),
+		...(final ? pick("followUp", boundary.followUpMode) : []),
+	];
 	users.sort((a, b) => a - b);
 
 	// `appendEntry()` copies the drafts' values; the items are removed only afterwards.

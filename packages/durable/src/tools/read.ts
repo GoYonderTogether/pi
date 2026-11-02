@@ -1,14 +1,7 @@
 import type { Context } from "@earendil-works/chord";
 import { characterEnd } from "@earendil-works/chord/output";
 import { type Static, Type } from "typebox";
-import {
-	type BinaryReader,
-	type FileInfo,
-	getOrThrow,
-	type LineScan,
-	rangeDecoder,
-	startsWithBom,
-} from "../env/index.ts";
+import { type BinaryReader, type FileInfo, getOrThrow } from "../env/index.ts";
 import { defineTool } from "../harness/define.ts";
 import type { ToolDiagnostic, ToolExecutionApi, ToolExecutionResult, ToolRegistration } from "../harness/types.ts";
 import {
@@ -19,7 +12,23 @@ import {
 	truncateHeadOf,
 	utf8ByteLength,
 } from "../truncate.ts";
+import { normalizeToLF, stripBom } from "./edit-diff.ts";
 import { requireEnv } from "./env.ts";
+import {
+	HASH_SEP,
+	anchorsFor,
+	badAnchorMessage,
+	fmtRegion,
+	fmtRow,
+	lineChecksum,
+	ownersOf,
+	parseAnchor,
+	serveRows,
+	servedFor,
+	splitLines,
+	staleAnchorMessage,
+	staleAnchorReport,
+} from "./hashline/anchors.ts";
 import { detectSupportedImageMimeTypeOf, imageDimensions } from "./image.ts";
 import {
 	base64Length,
@@ -33,8 +42,20 @@ import { resolveReadToolPath } from "./path-utils.ts";
 
 const readSchema = Type.Object({
 	path: Type.String({ description: "Path to the file to read (relative or absolute)" }),
-	offset: Type.Optional(Type.Number({ description: "Line number to start reading from (1-indexed)" })),
-	limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read" })),
+	offset: Type.Optional(
+		Type.Union([Type.Integer({ minimum: 1 }), Type.String()], {
+			description: "Line number (1-indexed) or a served anchor to start reading from",
+		}),
+	),
+	limit: Type.Optional(
+		Type.Integer({
+			minimum: 1,
+			description: "Maximum number of lines to read from offset; counted from the anchor row when `offset` is an anchor",
+		}),
+	),
+	anchors: Type.Optional(
+		Type.Boolean({ description: "Return the rows as structured data as well: the text, and one entry per row." }),
+	),
 });
 
 export type ReadToolInput = Static<typeof readSchema>;
@@ -44,38 +65,6 @@ export type ReadToolDetails = {
 	truncation?: Omit<TruncationResult, "content">;
 };
 
-const READ_CHUNK = 64 * 1024;
-
-/** `Array.prototype.slice`'s conversion of an index: NaN is 0, other values truncate toward zero. */
-function sliceIndex(value: number): number {
-	return Number.isNaN(value) ? 0 : Math.trunc(value);
-}
-
-/**
- * The decoded start of bytes `[start, end)` of the file, decoded as part of the whole file: all of it, or enough for
- * `truncateHeadOf` (more than `DEFAULT_MAX_BYTES + 1` bytes, or `DEFAULT_MAX_LINES` newlines).
- */
-async function readHead(
-	reader: BinaryReader,
-	start: number,
-	end: number,
-	skipBom: boolean,
-	context: Context,
-): Promise<string> {
-	const decoder = rangeDecoder();
-	let text = "";
-	let newlines = 0;
-	for (let position = skipBom && start === 0 ? 3 : start; position < end; ) {
-		const bytes = getOrThrow(await reader.read(position, Math.min(READ_CHUNK, end - position), context));
-		if (bytes.length === 0) break;
-		position += bytes.length;
-		const decoded = decoder.decode(bytes, { stream: true });
-		text += decoded;
-		for (let index = decoded.indexOf("\n"); index !== -1; index = decoded.indexOf("\n", index + 1)) newlines++;
-		if (newlines >= DEFAULT_MAX_LINES || utf8ByteLength(text) > DEFAULT_MAX_BYTES + 1) return text;
-	}
-	return text + decoder.decode();
-}
 
 export type ReadToolOptions = {
 	/** Resizes and converts images; without one, images within `DEFAULT_IMAGE_LIMITS.maxBytes` pass through as they are. */
@@ -108,7 +97,7 @@ export function createReadTool(options: ReadToolOptions = {}): ToolRegistration<
 					});
 					const result =
 						mimeType === undefined
-							? await readText(reader, path, offset, limit, context)
+							? await readText(reader, before, absolutePath, path, offset, limit, args.anchors === true, context)
 							: await readImage(
 									reader,
 									before,
@@ -219,94 +208,144 @@ function imageError(message: string): ToolExecutionResult<ReadToolDetails> {
  * The read result for the opened file. It equals decoding the whole file with `TextDecoder`, splitting it on `\n`,
  * and bounding the selected lines with `truncateHead`, while reading only one scan's worth of the file plus the head.
  */
+/** The 1-indexed line an `offset` names: a line number, or an anchor a read of this file served. */
+function resolveOffset(
+	offset: number | string | undefined,
+	lines: readonly string[],
+	hashes: readonly string[],
+	absolutePath: string,
+): number {
+	if (offset === undefined) return 1;
+	if (typeof offset === "number") return offset;
+	const trimmed = offset.trim();
+	if (/^\d+$/.test(trimmed)) return Number(trimmed);
+	const anchor = parseAnchor(trimmed);
+	if (anchor === undefined) throw new Error(badAnchorMessage(offset, "offset"));
+	const owned = ownersOf(anchor);
+	if (!owned.includes(absolutePath)) {
+		throw new Error(
+			staleAnchorMessage(
+				anchor,
+				owned.length === 0
+					? "Use a line number, or read again for fresh anchors."
+					: `It belongs to ${owned.join(", ")}. Use a line number, or read that file to use it.`,
+			),
+		);
+	}
+	const index = hashes.indexOf(anchor);
+	const line = index === -1 ? undefined : lines[index];
+	if (line === undefined || servedFor(absolutePath).get(anchor)?.checksum !== lineChecksum(line)) {
+		throw new Error(
+			staleAnchorReport(absolutePath, hashes, lines, [anchor], "Use a line number, or read again for fresh anchors."),
+		);
+	}
+	return index + 1;
+}
+
+/** The whole file decoded as UTF-8, and whether some byte was not valid UTF-8 (those bytes show as U+FFFD). */
+async function readWholeText(
+	reader: BinaryReader,
+	info: FileInfo,
+	context: Context,
+): Promise<{ text: string; hadUtf8DecodeErrors: boolean }> {
+	const bytes = getOrThrow(await reader.read(0, info.size, context));
+	let hadUtf8DecodeErrors = false;
+	try {
+		new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+	} catch {
+		hadUtf8DecodeErrors = true;
+	}
+	return { text: new TextDecoder().decode(bytes), hadUtf8DecodeErrors };
+}
+
+/** The rows of a served text as data: the anchor of each row and its content. */
+function rowEntries(text: string): Array<{ anchor: string; text: string }> {
+	return text.split("\n").flatMap((row) => {
+		const separator = row.indexOf(HASH_SEP);
+		return separator === -1 ? [] : [{ anchor: row.slice(0, separator), text: row.slice(separator + 1) }];
+	});
+}
+
+/**
+ * The read result for a file's text: one served row per line, `anchor│content`, bounded by the shared byte and line
+ * limits. `offset` is a line number or an anchor a previous read served, and only complete rows are served again.
+ */
 async function readText(
 	reader: BinaryReader,
+	info: FileInfo,
+	absolutePath: string,
 	path: string,
-	offset: number | undefined,
+	offset: number | string | undefined,
 	limit: number | undefined,
+	structured: boolean,
 	context: Context,
-) {
-	const startLine = offset ? Math.max(0, offset - 1) : 0;
-	const startLineDisplay = startLine + 1;
-	// Lines are selected like `allLines.slice(startLine, endLine)`, which truncates fractional indices.
-	const sliceStart = sliceIndex(startLine);
-	// One pass finds the line count and the selection; a selection past the last line ends with it, as `slice` does,
-	// and an empty one (a zero or negative limit) is scanned as one line and then ignored.
-	// A start beyond any file is scanned from 0 only to count lines; the offset check below then fails as before.
-	const scanStart = Number.isSafeInteger(sliceStart) ? sliceStart : 0;
-	const requestedEnd = limit === undefined ? undefined : Math.max(scanStart + 1, sliceIndex(startLine + limit));
-	const scanEnd = requestedEnd !== undefined && Number.isSafeInteger(requestedEnd) ? requestedEnd : undefined;
-	const scanOf = async (endLine: number | undefined): Promise<LineScan> =>
-		getOrThrow(
-			await reader.scanLines({ startLine: scanStart, ...(endLine === undefined ? {} : { endLine }) }, context),
-		);
-	let scan = await scanOf(scanEnd);
-	const totalFileLines = scan.newlines + 1;
-	if (startLine >= totalFileLines) {
-		throw new Error(`Offset ${offset} is beyond end of file (${totalFileLines} lines total)`);
-	}
-
-	let userLimitedLines: number | undefined;
-	let selectedLineCount = totalFileLines - sliceStart;
-	if (limit !== undefined) {
-		const endLine = Math.min(startLine + limit, totalFileLines);
-		userLimitedLines = endLine - startLine;
-		// `slice` counts a negative end from the end of the lines, which only the line count tells; scan again for it.
-		const relativeEnd = sliceIndex(endLine);
-		const sliceEnd = relativeEnd < 0 ? Math.max(totalFileLines + relativeEnd, 0) : relativeEnd;
-		selectedLineCount = Math.max(0, sliceEnd - sliceStart);
-		if (selectedLineCount > 0 && relativeEnd < 0) scan = await scanOf(sliceEnd);
-	}
-	const empty = selectedLineCount === 0;
-	// Counted like `truncateHead`: a trailing newline adds no line, and empty text has none.
-	const endsWithNewline = !empty && scan.lastLineStart === scan.end && scan.lastLineStart > scan.start;
-	const totals = {
-		lines: empty || scan.selectedBytes === 0 ? 0 : selectedLineCount - (endsWithNewline ? 1 : 0),
-		bytes: empty ? 0 : scan.selectedBytes,
-	};
-	const firstBytes = getOrThrow(await reader.read(0, 3, context));
-	const head = empty ? "" : await readHead(reader, scan.start, scan.end, startsWithBom(firstBytes), context);
-
-	const { content: headText, ...truncation } = truncateHeadOf(head, totals);
+): Promise<ToolExecutionResult<ReadToolDetails>> {
+	const { text, hadUtf8DecodeErrors } = await readWholeText(reader, info, context);
+	const normalized = normalizeToLF(stripBom(text).text);
+	const lines = splitLines(normalized);
+	const hashes = anchorsFor(absolutePath, lines);
+	const startLine = resolveOffset(offset, lines, hashes, absolutePath);
+	const totalLines = lines.length;
+	if (startLine > totalLines) throw new Error(`Offset ${startLine} is beyond end of file (${totalLines} lines total)`);
+	const startIndex = startLine - 1;
+	const endIndex = limit === undefined ? totalLines : Math.min(startIndex + limit, totalLines);
+	const selected = lines.slice(startIndex, endIndex);
+	const selectedHashes = hashes.slice(startIndex, endIndex);
 	const diagnostics: ToolDiagnostic[] = [];
+	if (hadUtf8DecodeErrors) {
+		diagnostics.push({
+			severity: "warn",
+			code: "encoding",
+			message: "[Non-UTF-8 bytes shown as U+FFFD; editing rewrites the file as UTF-8.]",
+		});
+	}
+	const structuredOf = (servedText: string) =>
+		structured ? { structuredOutput: { text: servedText, lines: rowEntries(servedText) } } : {};
+	if (normalized.length === 0) {
+		serveRows(absolutePath, hashes, lines, selectedHashes);
+		const servedText = `${fmtRow(hashes[0], "")}\n[File is empty. Use replace to insert content.]`;
+		return { output: [{ type: "text", text: servedText }], diagnostics, ...structuredOf(servedText) };
+	}
+	const rows = fmtRegion(selectedHashes, selected);
+	const { content: headText, ...truncation } = truncateHeadOf(rows, {
+		lines: selected.length,
+		bytes: utf8ByteLength(rows),
+	});
 	let outputText = headText;
+	let servedRows = headText === "" ? 0 : headText.split("\n").length;
 	let details: ReadToolDetails | undefined;
 	if (truncation.firstLineExceedsLimit) {
-		// Show the start of the line, cut at the byte limit on a character boundary. Like `allLines[startLine]`, a
-		// fractional start line names no line.
-		const integral = Number.isInteger(startLine);
-		const lineBytes = new TextEncoder().encode(integral ? (head.split("\n")[0] ?? "") : "");
-		const lineSize = integral ? scan.firstLineBytes : 0;
-		const end = characterEnd(lineBytes, DEFAULT_MAX_BYTES);
-		outputText = new TextDecoder().decode(lineBytes.subarray(0, end));
+		// Show the start of the row, cut at the byte limit on a character boundary, and serve none of it.
+		const rowBytes = new TextEncoder().encode(rows.split("\n")[0] ?? "");
+		const end = characterEnd(rowBytes, DEFAULT_MAX_BYTES);
+		outputText = new TextDecoder().decode(rowBytes.subarray(0, end));
+		servedRows = 0;
 		diagnostics.push({
 			severity: "warn",
 			code: "truncated",
-			message: `Line ${startLineDisplay} is ${formatSize(lineSize)}, exceeds the ${formatSize(DEFAULT_MAX_BYTES)} limit; showing its first ${formatSize(end)}. Use bash: sed -n '${startLineDisplay}p' ${path} | tail -c +${end + 1}`,
+			message: `Line ${startLine} is ${formatSize(utf8ByteLength(selected[0]))}, exceeds the ${formatSize(DEFAULT_MAX_BYTES)} limit; showing its first ${formatSize(end)}. Use bash: sed -n '${startLine}p' ${path} | tail -c +${end + 1}`,
 		});
 		details = { truncation: { ...truncation, outputBytes: end, outputLines: 1 } };
 	} else if (truncation.truncated) {
-		const endLineDisplay = startLineDisplay + truncation.outputLines - 1;
-		const nextOffset = endLineDisplay + 1;
+		const endLine = startLine + truncation.outputLines - 1;
 		const limitText = truncation.truncatedBy === "lines" ? "" : ` (${formatSize(DEFAULT_MAX_BYTES)} limit)`;
 		diagnostics.push({
 			severity: "info",
 			code: "truncated",
-			message: `Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines}${limitText}. Use offset=${nextOffset} to continue.`,
+			message: `Showing lines ${startLine}-${endLine} of ${totalLines}${limitText}. Use offset=${endLine + 1} to continue.`,
 		});
 		details = { truncation };
-	} else if (userLimitedLines !== undefined && startLine + userLimitedLines < totalFileLines) {
-		const remaining = totalFileLines - (startLine + userLimitedLines);
-		const nextOffset = startLine + userLimitedLines + 1;
+	} else if (limit !== undefined && endIndex < totalLines) {
 		diagnostics.push({
 			severity: "info",
-			message: `${remaining} more lines in file. Use offset=${nextOffset} to continue.`,
+			message: `${totalLines - endIndex} more lines in file. Use offset=${endIndex + 1} to continue.`,
 		});
 	}
-
+	serveRows(absolutePath, hashes, lines, selectedHashes.slice(0, servedRows));
 	return {
 		output: outputText === "" ? [] : [{ type: "text" as const, text: outputText }],
 		...(details === undefined ? {} : { details }),
 		diagnostics,
+		...structuredOf(outputText),
 	};
 }

@@ -1,20 +1,6 @@
 import { type Static, Type } from "typebox";
-import type { FileError } from "../env/index.ts";
 import { defineTool } from "../harness/define.ts";
 import type { ToolRegistration } from "../harness/types.ts";
-import {
-	applyEditsToNormalizedContent,
-	detectLineEnding,
-	type Edit,
-	generateDiffString,
-	generateUnifiedPatch,
-	normalizeToLF,
-	restoreLineEndings,
-	stripBom,
-} from "./edit-diff.ts";
-import { requireEnv } from "./env.ts";
-import { withFileMutationQueue } from "./file-mutation-queue.ts";
-import { resolveToolPath } from "./path-utils.ts";
 
 const replaceEditSchema = Type.Object({
 	oldText: Type.String({
@@ -57,7 +43,9 @@ function prepareEditArguments(input: unknown): EditToolInput {
 			} else if (isSingleEditInput(parsed)) {
 				args.edits = [parsed];
 			}
-		} catch {}
+		} catch {
+			// A string that is not JSON is no repaired shape; validation reports it.
+		}
 	} else if (isSingleEditInput(args.edits)) {
 		args.edits = [args.edits];
 	}
@@ -76,69 +64,28 @@ export type EditToolDetails = {
 	firstChangedLine?: number;
 };
 
-function validateEditInput(input: EditToolInput): { path: string; edits: Edit[] } {
-	if (!Array.isArray(input.edits) || input.edits.length === 0) {
-		throw new Error("Edit tool input is invalid. edits must contain at least one replacement.");
-	}
-	return { path: input.path, edits: input.edits };
-}
-
-function editAccessError(path: string, error: FileError): Error {
-	return new Error(`Could not edit file: ${path}. Error code: ${error.code}.`, { cause: error });
-}
-
+/**
+ * Deprecated: `edit` matched text approximately, which a file that changed under the model silently rewrote. Every edit
+ * is now addressed by the anchors `read` serves, so the name stays only to answer calls that still use it.
+ */
 export function createEditTool(): ToolRegistration<typeof editSchema, EditToolDetails> {
 	return defineTool({
 		name: "edit",
 		description:
-			"Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+			"Deprecated: this tool no longer edits files and every call is refused with a migration note. Edits are addressed by the anchors read() serves: replace (a range of lines), replace_match (part of one line), insert (text next to a line), copy and move (a range to another anchor), and undo_last_change (revert the last edit of a file).",
 		parameters: editSchema,
 		prepareArguments: prepareEditArguments,
-		async execute(args, api, context) {
-			const { path, edits } = validateEditInput(args);
-			const env = requireEnv(api);
-			const absolutePath = await resolveToolPath(env, path, context);
-			return withFileMutationQueue(
-				env,
-				absolutePath,
-				async () => {
-					if (context.abortSignal?.aborted) throw new Error("Operation aborted");
-					const info = await env.fileInfo(absolutePath, context);
-					if (!info.ok) throw editAccessError(path, info.error);
-					if (info.value.kind !== "file" && info.value.kind !== "symlink") {
-						throw new Error(`Could not edit file: ${path}. Path is not a file.`);
-					}
-
-					const readResult = await env.readTextFile(absolutePath, context);
-					if (!readResult.ok) throw editAccessError(path, readResult.error);
-					if (context.abortSignal?.aborted) throw new Error("Operation aborted");
-
-					const { bom, text: content } = stripBom(readResult.value);
-					const originalEnding = detectLineEnding(content);
-					const normalizedContent = normalizeToLF(content);
-					const { baseContent, newContent } = applyEditsToNormalizedContent(normalizedContent, edits, path);
-					if (context.abortSignal?.aborted) throw new Error("Operation aborted");
-
-					const finalContent = bom + restoreLineEndings(newContent, originalEnding);
-					const writeResult = await env.writeFile(absolutePath, finalContent, context);
-					if (!writeResult.ok) throw editAccessError(path, writeResult.error);
-					if (context.abortSignal?.aborted) throw new Error("Operation aborted");
-
-					const diffResult = generateDiffString(baseContent, newContent);
-					const details: EditToolDetails = {
-						diff: diffResult.diff,
-						patch: generateUnifiedPatch(path, baseContent, newContent),
-						...(diffResult.firstChangedLine === undefined
-							? {}
-							: { firstChangedLine: diffResult.firstChangedLine }),
-					};
-					return {
-						output: [{ type: "text", text: `Successfully replaced ${edits.length} block(s) in ${path}.` }],
-						details,
-					};
-				},
-				context,
-			);
+		async execute(args) {
+			const path = typeof args.path === "string" && args.path.length > 0 ? args.path : "the target file";
+			return {
+				output: [
+					{
+						type: "text",
+						text: `[E_TOOL_REPLACED] The edit tool no longer edits files; nothing was changed in ${path}. Edits are addressed by the anchors read() serves: replace writes a range of lines, replace_match one fragment inside a line, insert text next to a line, copy and move a range to another anchor, and undo_last_change reverts the last edit of a file. Call read() on ${path} for its current anchor│content rows, then send the anchors with the exact text.`,
+					},
+				],
+				isError: true,
+			};
 		},
 	});
 }

@@ -2,19 +2,24 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
-import { characterEnd } from "@earendil-works/chord/output";
+import { characterEnd, utf8ByteLength } from "@earendil-works/chord/output";
 import { afterAll, describe, expect, it } from "vitest";
 import { NodeExecutionEnv } from "../src/env/node.ts";
 import type { ToolDiagnostic, ToolExecutionApi } from "../src/harness/types.ts";
+import { normalizeToLF, stripBom } from "../src/tools/edit-diff.ts";
+import { anchorsFor, fmtRegion, fmtRow, splitLines } from "../src/tools/hashline/anchors.ts";
 import { detectSupportedImageMimeType } from "../src/tools/image.ts";
 import { createReadTool } from "../src/tools/read.ts";
-import { DEFAULT_MAX_BYTES, formatSize, truncateHead } from "../src/truncate.ts";
+import { DEFAULT_MAX_BYTES, formatSize, truncateHeadOf } from "../src/truncate.ts";
 
-/**
- * The `read` tool before bounded reads, kept as the reference: it decodes the whole file, splits it into lines, and
- * truncates the selection. The tool must give the same result while reading only a bounded part of the file.
- */
-function referenceRead(bytes: Uint8Array, path: string, offset: number | undefined, limit: number | undefined) {
+/** Full-file reference for the anchored rows returned by the bounded read path. */
+function referenceRead(
+	bytes: Uint8Array,
+	path: string,
+	absolutePath: string,
+	offset: number | undefined,
+	limit: number | undefined,
+) {
 	const mimeType = detectSupportedImageMimeType(bytes);
 	if (mimeType) {
 		return {
@@ -22,53 +27,65 @@ function referenceRead(bytes: Uint8Array, path: string, offset: number | undefin
 			diagnostics: [{ severity: "info", code: "image", message: `Read image file [${mimeType}].` }],
 		};
 	}
-	const textContent = new TextDecoder().decode(bytes);
-	const allLines = textContent.split("\n");
-	const totalFileLines = allLines.length;
-	const startLine = offset ? Math.max(0, offset - 1) : 0;
-	const startLineDisplay = startLine + 1;
-	if (startLine >= allLines.length) {
-		throw new Error(`Offset ${offset} is beyond end of file (${allLines.length} lines total)`);
-	}
-	let selectedContent: string;
-	let userLimitedLines: number | undefined;
-	if (limit !== undefined) {
-		const endLine = Math.min(startLine + limit, allLines.length);
-		selectedContent = allLines.slice(startLine, endLine).join("\n");
-		userLimitedLines = endLine - startLine;
-	} else {
-		selectedContent = allLines.slice(startLine).join("\n");
-	}
-	const { content: headText, ...truncation } = truncateHead(selectedContent);
+	const text = new TextDecoder().decode(bytes);
+	const normalized = normalizeToLF(stripBom(text).text);
+	const lines = splitLines(normalized);
+	const hashes = anchorsFor(absolutePath, lines);
+	const startLine = offset ?? 1;
+	if (startLine > lines.length)
+		throw new Error(`Offset ${startLine} is beyond end of file (${lines.length} lines total)`);
+	const startIndex = startLine - 1;
+	const endIndex = limit === undefined ? lines.length : Math.min(startIndex + limit, lines.length);
+	const selected = lines.slice(startIndex, endIndex);
+	const selectedHashes = hashes.slice(startIndex, endIndex);
 	const diagnostics: ToolDiagnostic[] = [];
-	let outputText = headText;
+	let hadUtf8DecodeErrors = false;
+	try {
+		new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+	} catch {
+		hadUtf8DecodeErrors = true;
+	}
+	if (hadUtf8DecodeErrors) {
+		diagnostics.push({
+			severity: "warn",
+			code: "encoding",
+			message: "[Non-UTF-8 bytes shown as U+FFFD; editing rewrites the file as UTF-8.]",
+		});
+	}
+	if (normalized.length === 0) {
+		return {
+			output: [{ type: "text", text: `${fmtRow(hashes[0]!, "")}\n[File is empty. Use replace to insert content.]` }],
+			diagnostics,
+		};
+	}
+	const rows = fmtRegion(selectedHashes, selected);
+	const truncation = truncateHeadOf(rows, { lines: selected.length, bytes: utf8ByteLength(rows) });
+	const { content: _content, ...truncationDetails } = truncation;
+	let outputText = truncation.content;
 	let details: object | undefined;
 	if (truncation.firstLineExceedsLimit) {
-		const lineBytes = new TextEncoder().encode(allLines[startLine]);
-		const end = characterEnd(lineBytes, DEFAULT_MAX_BYTES);
-		outputText = new TextDecoder().decode(lineBytes.subarray(0, end));
+		const rowBytes = new TextEncoder().encode(rows.split("\n")[0] ?? "");
+		const end = characterEnd(rowBytes, DEFAULT_MAX_BYTES);
+		outputText = new TextDecoder().decode(rowBytes.subarray(0, end));
 		diagnostics.push({
 			severity: "warn",
 			code: "truncated",
-			message: `Line ${startLineDisplay} is ${formatSize(lineBytes.byteLength)}, exceeds the ${formatSize(DEFAULT_MAX_BYTES)} limit; showing its first ${formatSize(end)}. Use bash: sed -n '${startLineDisplay}p' ${path} | tail -c +${end + 1}`,
+			message: `Line ${startLine} is ${formatSize(utf8ByteLength(selected[0]!))}, exceeds the ${formatSize(DEFAULT_MAX_BYTES)} limit; showing its first ${formatSize(end)}. Use bash: sed -n '${startLine}p' ${path} | tail -c +${end + 1}`,
 		});
-		details = { truncation: { ...truncation, outputBytes: end, outputLines: 1 } };
+		details = { truncation: { ...truncationDetails, outputBytes: end, outputLines: 1 } };
 	} else if (truncation.truncated) {
-		const endLineDisplay = startLineDisplay + truncation.outputLines - 1;
-		const nextOffset = endLineDisplay + 1;
+		const endLine = startLine + truncation.outputLines - 1;
 		const limitText = truncation.truncatedBy === "lines" ? "" : ` (${formatSize(DEFAULT_MAX_BYTES)} limit)`;
 		diagnostics.push({
 			severity: "info",
 			code: "truncated",
-			message: `Showing lines ${startLineDisplay}-${endLineDisplay} of ${totalFileLines}${limitText}. Use offset=${nextOffset} to continue.`,
+			message: `Showing lines ${startLine}-${endLine} of ${lines.length}${limitText}. Use offset=${endLine + 1} to continue.`,
 		});
-		details = { truncation };
-	} else if (userLimitedLines !== undefined && startLine + userLimitedLines < allLines.length) {
-		const remaining = allLines.length - (startLine + userLimitedLines);
-		const nextOffset = startLine + userLimitedLines + 1;
+		details = { truncation: truncationDetails };
+	} else if (limit !== undefined && endIndex < lines.length) {
 		diagnostics.push({
 			severity: "info",
-			message: `${remaining} more lines in file. Use offset=${nextOffset} to continue.`,
+			message: `${lines.length - endIndex} more lines in file. Use offset=${endIndex + 1} to continue.`,
 		});
 	}
 	return {
@@ -147,7 +164,7 @@ async function outcome<T>(run: () => T | Promise<T>): Promise<T | { error: strin
 }
 
 describe("read tool", () => {
-	it("returns exactly what reading the whole file returned", async () => {
+	it("returns the same anchored selection as a full-file reference", async () => {
 		const cwd = mkdtempSync(join(tmpdir(), "pi-durable-read-"));
 		dirs.push(cwd);
 		const env = new NodeExecutionEnv({ cwd });
@@ -165,7 +182,7 @@ describe("read tool", () => {
 					...(limit === undefined ? {} : { limit }),
 				};
 				const actual = await outcome(() => tool.execute(args, apiFor(env), BACKGROUND_CONTEXT));
-				const expected = await outcome(() => referenceRead(file, "f.txt", offset, limit));
+				const expected = await outcome(() => referenceRead(file, "f.txt", join(cwd, "f.txt"), offset, limit));
 				expect(actual, `seed ${seed} offset ${offset} limit ${limit}`).toEqual(expected);
 			}
 		}
@@ -199,6 +216,8 @@ describe("read tool", () => {
 		writeFileSync(join(cwd, "a.png"), png);
 		const env = new NodeExecutionEnv({ cwd });
 		const actual = await outcome(() => createReadTool().execute({ path: "a.png" }, apiFor(env), BACKGROUND_CONTEXT));
-		expect(actual).toEqual(await outcome(() => referenceRead(png, "a.png", undefined, undefined)));
+		expect(actual).toEqual(
+			await outcome(() => referenceRead(png, "a.png", join(cwd, "a.png"), undefined, undefined)),
+		);
 	});
 });

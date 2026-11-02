@@ -1,6 +1,6 @@
 import type { Context } from "@earendil-works/chord";
-import { detectLineEnding, normalizeToLF, restoreLineEndings, stripBom } from "../edit-diff.ts";
 import { type ExecutionEnv, getOrThrow } from "../../env/index.ts";
+import { detectLineEnding, normalizeToLF, restoreLineEndings, stripBom } from "../edit-diff.ts";
 import { resolveToolPath } from "../path-utils.ts";
 import {
 	anchorsFor,
@@ -8,8 +8,8 @@ import {
 	lineChecksum,
 	ownersOf,
 	parseAnchor,
-	serveRows,
 	servedFor,
+	serveRows,
 	splitLines,
 	staleAnchorMessage,
 	staleAnchorReport,
@@ -105,13 +105,11 @@ export function resolveRange(file: EditableFile, from: string, to: string): { st
 /** Every line of the range must still be what was served; a pure deletion only needs the two rows it names. */
 export function assertRangeServed(file: EditableFile, start: number, end: number, pureDeletion: boolean): void {
 	const rows = servedFor(file.absolutePath);
-	const stale = file.hashes
-		.slice(start, end + 1)
-		.filter((anchor, offset) => {
-			const index = start + offset;
-			if (pureDeletion && index !== start && index !== end) return false;
-			return rows.get(anchor)?.checksum !== lineChecksum(file.lines[index]);
-		});
+	const stale = file.hashes.slice(start, end + 1).filter((anchor, offset) => {
+		const index = start + offset;
+		if (pureDeletion && index !== start && index !== end) return false;
+		return rows.get(anchor)?.checksum !== lineChecksum(file.lines[index]);
+	});
 	if (stale.length === 0) return;
 	serveRows(file.absolutePath, file.hashes, file.lines, file.hashes);
 	throw new Error(
@@ -148,7 +146,7 @@ export function applyRange(
 export function assertWritableText(text: string): void {
 	if (!text.includes(String.fromCharCode(0))) return;
 	throw new Error(
-		'[E_BAD_SHAPE] Content contains a NUL byte (U+0000); a text file cannot contain NUL, and writing it would break further reads and edits. Remove the NUL byte and retry.',
+		"[E_BAD_SHAPE] Content contains a NUL byte (U+0000); a text file cannot contain NUL, and writing it would break further reads and edits. Remove the NUL byte and retry.",
 	);
 }
 
@@ -160,4 +158,5 @@ export async function writeEditableFile(
 	context: Context,
 ): Promise<void> {
 	getOrThrow(await env.writeFile(absolutePath, content, context));
+	if (context.abortSignal?.aborted) throw new Error("Operation aborted");
 }

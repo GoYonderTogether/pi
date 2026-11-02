@@ -72,7 +72,8 @@ export class Submissions {
 				existing === undefined &&
 				draft.type === "input" &&
 				current !== undefined &&
-				(draft.whenBusy === "interrupt" || (draft.whenBusy === "steer" && live.tools === undefined));
+				(draft.whenBusy === "interrupt" ||
+					(draft.whenBusy === "steer" && draft.sourceGroup === live.run?.sourceGroup && live.tools === undefined));
 			const id = await admitSubmission(tx, conversationId, draft, this.#now(), this.#queueModes());
 			// Steer preserves running tools; explicit interrupt cancels their ordinary ownership scope too.
 			if (interrupt && live.run !== undefined && current.kind === "pi.generation" && !current.abortRequested) {
@@ -218,6 +219,7 @@ export async function admitSubmission(
 		const { id } = await tx.createSubmission({
 			conversationId,
 			...requestId,
+			...(draft.type === "input" && draft.sourceGroup !== undefined ? { sourceGroup: draft.sourceGroup } : {}),
 			type: draft.type,
 			status: "queued",
 		});
@@ -231,11 +233,17 @@ export async function admitSubmission(
 			const mode = draft.whenBusy === "steer" || draft.whenBusy === "interrupt" ? "steer" : "followUp";
 			const content = value as JsonRepresentation<UserInput>;
 			const entry = draft.entry === undefined ? {} : { entry: pickInputEntry(draft.entry) };
-			items.push({ id, mode, content, ...entry });
+			items.push({
+				id,
+				mode,
+				content,
+				...(draft.sourceGroup === undefined ? {} : { sourceGroup: draft.sourceGroup }),
+				...entry,
+			});
 		}
 		if (boundary === undefined) return id;
-		const { users } = await applyBoundary(tx, boundary, "final", now);
-		if (users.length > 0) await startRun(tx, conversationId, live, users);
+		const { users, sourceGroup } = await applyBoundary(tx, boundary, "final", now);
+		if (users.length > 0) await startRun(tx, conversationId, live, users, sourceGroup);
 		return id;
 	}
 	if (draft.type === "write") {
@@ -248,8 +256,15 @@ export async function admitSubmission(
 		return (await tx.createSubmission(write)).id;
 	}
 	const entry = await appendInput(tx, conversationId, draft.content, draft.entry, now);
-	const input = { conversationId, ...requestId, type: "input", status: "placed", entry: entry.id } as const;
+	const input = {
+		conversationId,
+		...requestId,
+		...(draft.sourceGroup === undefined ? {} : { sourceGroup: draft.sourceGroup }),
+		type: "input",
+		status: "placed",
+		entry: entry.id,
+	} as const;
 	const { id } = await tx.createSubmission(input);
-	await startRun(tx, conversationId, live, [id]);
+	await startRun(tx, conversationId, live, [id], draft.sourceGroup);
 	return id;
 }

@@ -373,6 +373,8 @@ type SubmissionRecordBase = {
 	readonly conversationId: ConversationId;
 	/** Host-provided deduplication key, scoped to the conversation. */
 	readonly requestId?: string;
+	/** Trusted host source that keeps this input separate from other queued origins. */
+	readonly sourceGroup?: string;
 };
 
 /** Durable lifecycle of one admitted user input or passive entry write. */

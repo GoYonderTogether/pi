@@ -94,6 +94,8 @@ export type LiveState = {
 	run?: {
 		taskId: TaskId;
 		inputs: SubmissionId[];
+		/** Input source whose queued steers may join this run. */
+		sourceGroup?: string;
 		resumeOnInterrupt?: boolean;
 		modelFallback?: { index: number; failures: number };
 	};

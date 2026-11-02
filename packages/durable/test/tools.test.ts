@@ -12,7 +12,6 @@ import type {
 	ToolExecutionResult,
 	ToolRegistration,
 } from "@earendil-works/pi-durable";
-import { applyPatch } from "diff";
 import { afterAll, describe, expect, it } from "vitest";
 import {
 	type ExecutionEnv,
@@ -28,12 +27,14 @@ import {
 } from "../src/env/index.ts";
 import { NodeExecutionEnv } from "../src/env/node.ts";
 import { withFileMutationQueue } from "../src/tools/file-mutation-queue.ts";
+import { HASH_SEP } from "../src/tools/hashline/anchors.ts";
 import { detectSupportedImageMimeType } from "../src/tools/image.ts";
 import {
 	createBashTool,
 	createEditTool,
 	createPowerShellTool,
 	createReadTool,
+	createReplaceTool,
 	createWriteTool,
 } from "../src/tools/index.ts";
 import { DEFAULT_MAX_LINES } from "../src/truncate.ts";
@@ -110,6 +111,13 @@ function textOutput(result: ToolExecutionResult): string {
 
 function diagnosticText(result: ToolExecutionResult): string {
 	return (result.diagnostics ?? []).map((diagnostic) => diagnostic.message).join("\n");
+}
+
+async function anchorFor(path: string, content: string, env: ExecutionEnv): Promise<string> {
+	const rows = textOutput(await run(createReadTool(), { path }, env)).split("\n");
+	const row = rows.find((candidate) => candidate.endsWith(`${HASH_SEP}${content}`));
+	if (!row) throw new Error(`No served anchor for ${content} in ${path}`);
+	return row.slice(0, row.indexOf(HASH_SEP));
 }
 
 function deferred(): { promise: Promise<void>; resolve: () => void } {
@@ -262,8 +270,11 @@ describe("durable tools", () => {
 			getOrThrow(await env.writeFile("long.txt", `${"é".repeat(40_000)}\nnext\n`, BACKGROUND_CONTEXT));
 			const result = await run(createReadTool(), { path: "long.txt" }, env);
 			const text = textOutput(result);
-			// Two-byte characters: the cut lands on a character boundary at or below the limit.
-			expect(text).toBe("é".repeat(25_600));
+			const row = text.split("\n")[0]!;
+			const separator = row.indexOf(HASH_SEP);
+			expect(row.slice(0, separator)).toMatch(/^[a-z]{5}$/);
+			// Two-byte characters: the eight-byte anchor prefix leaves 25,596 characters within the byte limit.
+			expect(row.slice(separator + 1)).toBe("é".repeat(25_596));
 			expect(diagnosticText(result)).toBe(
 				"Line 1 is 78.1KB, exceeds the 50.0KB limit; showing its first 50.0KB. Use bash: sed -n '1p' long.txt | tail -c +51201",
 			);
@@ -302,7 +313,11 @@ describe("durable tools", () => {
 				return opened;
 			};
 			const result = await run(createReadTool(), { path: "app.log", limit: 2 }, growing);
-			expect(textOutput(result)).toBe("one\ntwo");
+			expect(
+				textOutput(result)
+					.split("\n")
+					.map((row) => row.slice(row.indexOf(HASH_SEP) + 1)),
+			).toEqual(["one", "two"]);
 		});
 
 		it("returns images by content as one image block", async () => {
@@ -348,30 +363,20 @@ describe("durable tools", () => {
 	});
 
 	describe("edit", () => {
-		it("applies disjoint edits and returns both diff formats", async () => {
+		it("refuses deprecated edit calls without changing the file", async () => {
 			const env = createEnv();
-			const original = "alpha\nbeta\ngamma\ndelta\n";
-			getOrThrow(await env.writeFile("edit.txt", original, BACKGROUND_CONTEXT));
+			getOrThrow(await env.writeFile("edit.txt", "alpha\nbeta\n", BACKGROUND_CONTEXT));
 			const result = await run(
 				createEditTool(),
-				{
-					path: "edit.txt",
-					edits: [
-						{ oldText: "alpha\n", newText: "ALPHA\n" },
-						{ oldText: "gamma\n", newText: "GAMMA\n" },
-					],
-				},
+				{ path: "edit.txt", edits: [{ oldText: "alpha", newText: "ALPHA" }] },
 				env,
 			);
-			const details = result.details as { diff: string; patch: string };
-			expect(textOutput(result)).toBe("Successfully replaced 2 block(s) in edit.txt.");
-			expect(details.diff).toContain("ALPHA");
-			expect(details.diff).toContain("GAMMA");
-			expect(applyPatch(original, details.patch)).toBe("ALPHA\nbeta\nGAMMA\ndelta\n");
-			expect(getOrThrow(await env.readTextFile("edit.txt", BACKGROUND_CONTEXT))).toBe("ALPHA\nbeta\nGAMMA\ndelta\n");
+			expect(result.isError).toBe(true);
+			expect(textOutput(result)).toContain("[E_TOOL_REPLACED]");
+			expect(getOrThrow(await env.readTextFile("edit.txt", BACKGROUND_CONTEXT))).toBe("alpha\nbeta\n");
 		});
 
-		it("repairs edits sent as a JSON string, a single object, or top-level oldText/newText without mutating them", () => {
+		it("keeps legacy edit argument repair available for migration diagnostics", () => {
 			const prepare = createEditTool().prepareArguments!;
 			const edit = { oldText: "a", newText: "b" };
 			const asString = { path: "f", edits: JSON.stringify([edit]) };
@@ -379,140 +384,93 @@ describe("durable tools", () => {
 			expect(asString.edits).toBe(JSON.stringify([edit]));
 			expect(prepare({ path: "f", edits: JSON.stringify(edit) })).toEqual({ path: "f", edits: [edit] });
 			expect(prepare({ path: "f", edits: edit })).toEqual({ path: "f", edits: [edit] });
-			expect(prepare({ path: "f", edits: [edit], oldText: "c", newText: "d" })).toEqual({
-				path: "f",
-				edits: [edit, { oldText: "c", newText: "d" }],
-			});
 			expect(prepare({ path: "f", edits: "not json" })).toEqual({ path: "f", edits: "not json" });
 		});
 
-		it("matches all edits against the original and rejects overlaps", async () => {
-			const env = createEnv();
-			getOrThrow(await env.writeFile("edit.txt", "one\ntwo\nthree\n", BACKGROUND_CONTEXT));
-			await expect(
-				run(
-					createEditTool(),
-					{
-						path: "edit.txt",
-						edits: [
-							{ oldText: "one\ntwo\n", newText: "ONE\nTWO\n" },
-							{ oldText: "two\nthree\n", newText: "TWO\nTHREE\n" },
-						],
-					},
-					env,
-				),
-			).rejects.toThrow(/overlap/);
-			expect(getOrThrow(await env.readTextFile("edit.txt", BACKGROUND_CONTEXT))).toBe("one\ntwo\nthree\n");
-		});
-
-		it("rejects missing and duplicate target text", async () => {
-			const env = createEnv();
-			getOrThrow(await env.writeFile("edit.txt", "foo foo foo", BACKGROUND_CONTEXT));
-			const tool = createEditTool();
-			await expect(
-				run(tool, { path: "edit.txt", edits: [{ oldText: "bar", newText: "baz" }] }, env),
-			).rejects.toThrow(/Could not find the exact text/);
-			await expect(
-				run(tool, { path: "edit.txt", edits: [{ oldText: "foo", newText: "bar" }] }, env),
-			).rejects.toThrow(/Found 3 occurrences/);
-		});
-
-		it("keeps the mutation queue locked until an aborted edit write settles", async () => {
+		it("keeps the mutation queue locked until an aborted anchor edit write settles", async () => {
 			const env = new BlockingEditExecutionEnv({ cwd: createTempDir() });
 			getOrThrow(await env.writeFile("file.txt", "alpha\nbeta\n", BACKGROUND_CONTEXT));
-			const tool = createEditTool();
+			const tool = createReplaceTool();
+			const alpha = await anchorFor("file.txt", "alpha", env);
+			const beta = await anchorFor("file.txt", "beta", env);
 			const controller = new AbortController();
-			const firstEdit = run(
+			const first = run(
 				tool,
-				{ path: "file.txt", edits: [{ oldText: "alpha", newText: "ALPHA" }] },
+				{ path: "file.txt", remove_from: alpha, remove_to: alpha, text: "ALPHA" },
 				env,
 				withAbortSignal(controller.signal, BACKGROUND_CONTEXT),
 			);
 			await env.firstEditWriteStarted.promise;
 			controller.abort();
-			const secondEdit = run(tool, { path: "file.txt", edits: [{ oldText: "beta", newText: "BETA" }] }, env);
+			const second = run(tool, { path: "file.txt", remove_from: beta, remove_to: beta, text: "BETA" }, env);
 			await delay(20);
 			expect(env.secondEditWriteStarted).toBe(false);
 			env.finishFirstEditWrite.resolve();
-			await expect(firstEdit).rejects.toThrow("Operation aborted");
-			await secondEdit;
+			await expect(first).rejects.toThrow("Operation aborted");
+			await second;
 			expect(env.firstEditWriteSettled).toBe(true);
 			expect(getOrThrow(await env.readTextFile("file.txt", BACKGROUND_CONTEXT))).toBe("ALPHA\nBETA\n");
 		});
 
-		it("serializes concurrent edits through canonical and symlink paths", async () => {
+		it("serializes anchor edits through canonical and symlink paths", async () => {
 			const env = new SlowReadExecutionEnv({ cwd: createTempDir() });
 			getOrThrow(await env.writeFile("target.txt", "alpha\nbeta\ngamma\n", BACKGROUND_CONTEXT));
 			await symlink("target.txt", `${env.cwd}/link.txt`);
-			const tool = createEditTool();
+			const alpha = await anchorFor("target.txt", "alpha", env);
+			const beta = await anchorFor("link.txt", "beta", env);
+			const tool = createReplaceTool();
 			await Promise.all([
-				run(tool, { path: "target.txt", edits: [{ oldText: "alpha", newText: "ALPHA" }] }, env),
-				run(tool, { path: "link.txt", edits: [{ oldText: "beta", newText: "BETA" }] }, env),
+				run(tool, { path: "target.txt", remove_from: alpha, remove_to: alpha, text: "ALPHA" }, env),
+				run(tool, { path: "link.txt", remove_from: beta, remove_to: beta, text: "BETA" }, env),
 			]);
 			expect(getOrThrow(await env.readTextFile("target.txt", BACKGROUND_CONTEXT))).toBe("ALPHA\nBETA\ngamma\n");
 		});
 
-		it("serializes edits of one file across environment objects of one file system", async () => {
+		it("serializes anchor edits across environment objects of one file system", async () => {
 			const dir = createTempDir();
 			const first = new SlowReadExecutionEnv({ cwd: dir });
 			const second = new SlowReadExecutionEnv({ cwd: dir });
 			getOrThrow(await first.writeFile("file.txt", "alpha\nbeta\n", BACKGROUND_CONTEXT));
-			const tool = createEditTool();
+			const alpha = await anchorFor("file.txt", "alpha", first);
+			const beta = await anchorFor("file.txt", "beta", second);
+			const tool = createReplaceTool();
 			await Promise.all([
-				run(tool, { path: "file.txt", edits: [{ oldText: "alpha", newText: "ALPHA" }] }, first),
-				run(tool, { path: "file.txt", edits: [{ oldText: "beta", newText: "BETA" }] }, second),
+				run(tool, { path: "file.txt", remove_from: alpha, remove_to: alpha, text: "ALPHA" }, first),
+				run(tool, { path: "file.txt", remove_from: beta, remove_to: beta, text: "BETA" }, second),
 			]);
 			expect(getOrThrow(await first.readTextFile("file.txt", BACKGROUND_CONTEXT))).toBe("ALPHA\nBETA\n");
 		});
 
-		it("serializes a new file created through a symlinked directory with its canonical path", async () => {
-			const env = new BlockingWriteExecutionEnv({ cwd: createTempDir() });
-			mkdirSync(`${env.cwd}/real`);
-			await symlink(`${env.cwd}/real`, `${env.cwd}/link`);
-			const tool = createWriteTool();
-			const first = run(tool, { path: "link/new.txt", content: "first\n" }, env);
-			await env.firstWriteStarted.promise;
-			const second = run(tool, { path: "real/new.txt", content: "second\n" }, env);
+		it("keys a missing file whose name contains a backslash like the created file", async () => {
+			const env = createEnv();
+			const created = deferred();
+			const release = deferred();
+			const first = withFileMutationQueue(
+				env,
+				"a\\b.txt",
+				async () => {
+					getOrThrow(await env.writeFile("a\\b.txt", "first\n", BACKGROUND_CONTEXT));
+					created.resolve();
+					await release.promise;
+				},
+				BACKGROUND_CONTEXT,
+			);
+			await created.promise;
+			let entered = false;
+			const second = withFileMutationQueue(
+				env,
+				"a\\b.txt",
+				async () => {
+					entered = true;
+				},
+				BACKGROUND_CONTEXT,
+			);
 			await delay(20);
-			expect(env.secondWriteStarted).toBe(false);
-			env.finishFirstWrite.resolve();
+			expect(entered).toBe(false);
+			release.resolve();
 			await Promise.all([first, second]);
-			expect(getOrThrow(await env.readTextFile("real/new.txt", BACKGROUND_CONTEXT))).toBe("second\n");
+			expect(entered).toBe(true);
 		});
-
-		it.skipIf(process.platform === "win32")(
-			"keys a missing file whose name contains a backslash like the created file",
-			async () => {
-				const env = createEnv();
-				const created = deferred();
-				const release = deferred();
-				const first = withFileMutationQueue(
-					env,
-					"a\\b.txt",
-					async () => {
-						getOrThrow(await env.writeFile("a\\b.txt", "first\n", BACKGROUND_CONTEXT));
-						created.resolve();
-						await release.promise;
-					},
-					BACKGROUND_CONTEXT,
-				);
-				await created.promise;
-				let entered = false;
-				const second = withFileMutationQueue(
-					env,
-					"a\\b.txt",
-					async () => {
-						entered = true;
-					},
-					BACKGROUND_CONTEXT,
-				);
-				await delay(20);
-				expect(entered).toBe(false);
-				release.resolve();
-				await Promise.all([first, second]);
-				expect(entered).toBe(true);
-			},
-		);
 
 		it("does not serialize the same path on different file systems", async () => {
 			class OtherFileSystem extends BlockingWriteExecutionEnv {
@@ -530,18 +488,39 @@ describe("durable tools", () => {
 			await blocked;
 		});
 
+		it("serializes a new file created through a symlinked directory with its canonical path", async () => {
+			const env = new BlockingWriteExecutionEnv({ cwd: createTempDir() });
+			mkdirSync(`${env.cwd}/real`);
+			await symlink(`${env.cwd}/real`, `${env.cwd}/link`);
+			const tool = createWriteTool();
+			const first = run(tool, { path: "link/new.txt", content: "first\n" }, env);
+			await env.firstWriteStarted.promise;
+			const second = run(tool, { path: "real/new.txt", content: "second\n" }, env);
+			await delay(20);
+			expect(env.secondWriteStarted).toBe(false);
+			env.finishFirstWrite.resolve();
+			await Promise.all([first, second]);
+			expect(getOrThrow(await env.readTextFile("real/new.txt", BACKGROUND_CONTEXT))).toBe("second\n");
+		});
+
 		it("edits regular files through symlinks", async () => {
 			const env = createEnv();
 			getOrThrow(await env.writeFile("target.txt", "before\n", BACKGROUND_CONTEXT));
 			await symlink("target.txt", `${env.cwd}/link.txt`);
-			await run(createEditTool(), { path: "link.txt", edits: [{ oldText: "before", newText: "after" }] }, env);
+			const anchor = await anchorFor("link.txt", "before", env);
+			await run(
+				createReplaceTool(),
+				{ path: "link.txt", remove_from: anchor, remove_to: anchor, text: "after" },
+				env,
+			);
 			expect(getOrThrow(await env.readTextFile("target.txt", BACKGROUND_CONTEXT))).toBe("after\n");
 		});
 
 		it("preserves BOM and CRLF line endings", async () => {
 			const env = createEnv();
 			getOrThrow(await env.writeFile("edit.txt", "\uFEFFone\r\ntwo\r\n", BACKGROUND_CONTEXT));
-			await run(createEditTool(), { path: "edit.txt", edits: [{ oldText: "two", newText: "TWO" }] }, env);
+			const anchor = await anchorFor("edit.txt", "two", env);
+			await run(createReplaceTool(), { path: "edit.txt", remove_from: anchor, remove_to: anchor, text: "TWO" }, env);
 			expect(getOrThrow(await env.readTextFile("edit.txt", BACKGROUND_CONTEXT))).toBe("\uFEFFone\r\nTWO\r\n");
 		});
 	});

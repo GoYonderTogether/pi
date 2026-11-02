@@ -35,7 +35,7 @@ import { recordUsage } from "../src/harness/usage.ts";
 import { openNodeSqliteStorage } from "../src/storage/sqlite/node.ts";
 import { allEntries, type ChatSetup, chatSetup, openChat, textOf, waitFor } from "./chat-support.ts";
 import { addHooks, addTool } from "./harness-support.ts";
-import { ControlledStorage, context, documentChanges, flush } from "./session-support.ts";
+import { ControlledStorage, context, documentChanges } from "./session-support.ts";
 import { aborted, type Deferred, deferred } from "./task-support.ts";
 
 const directories = new Set<string>();
@@ -91,7 +91,7 @@ async function status(submission: Submission): Promise<SubmissionRecord> {
 /** Kind and text of each entry, skipping system entries. */
 function transcript(entries: readonly EntryRecord[]): string[] {
 	return entries
-		.filter((entry) => entry.kind !== "pi.system")
+		.filter((entry) => entry.kind !== "pi.system" && entry.kind !== "pi.model-observation")
 		.map((entry) => {
 			const message = entry.model?.[0];
 			const text = message?.role === "toolResult" ? undefined : textOf(message);
@@ -108,6 +108,108 @@ async function toolRunning(harness: Harness, root: Conversation): Promise<void> 
 }
 
 describe("inbox", () => {
+	it("keeps a foreign steer behind the active source and starts each queued origin separately", async () => {
+		const setup = chatSetup();
+		const first = gated(answer("A answered"));
+		setup.faux.setResponses([first.step, answer("B answered"), answer("C answered")]);
+		const { harness, root } = await openChat(new MemoryStorage(), setup);
+		const a = await root.submit({ type: "input", content: "A request", sourceGroup: "conv:A" }, context);
+		await first.reached;
+		const b = await root.submit(
+			{ type: "input", content: "B request", whenBusy: "steer", sourceGroup: "conv:B" },
+			context,
+		);
+		const c = await root.submit(
+			{ type: "input", content: "C request", whenBusy: "steer", sourceGroup: "conv:C" },
+			context,
+		);
+		first.release();
+		await c.wait(context);
+		const entries = await allEntries(root);
+		const answers = entries.filter((entry) => entry.kind === "pi.assistant");
+		expect(transcript(entries)).toEqual([
+			"pi.user:A request",
+			"pi.assistant:A answered",
+			"pi.user:B request",
+			"pi.assistant:B answered",
+			"pi.user:C request",
+			"pi.assistant:C answered",
+		]);
+		expect(await status(a)).toMatchObject({ status: "done", answer: answers[0]!.id });
+		expect(await status(b)).toMatchObject({ status: "done", answer: answers[1]!.id });
+		expect(await status(c)).toMatchObject({ status: "done", answer: answers[2]!.id });
+		expect(setup.faux.state.callCount).toBe(3);
+		await harness.close(context);
+	});
+
+	it("admits only same-source steers at postTools while retaining foreign inputs for a later run", async () => {
+		const setup = chatSetup();
+		const gate = deferred();
+		holdTool(setup, gate);
+		setup.faux.setResponses([HOLD, answer("A follow-up"), answer("B reply")]);
+		const { harness, root } = await openChat(new MemoryStorage(), setup);
+		const a = await root.submit({ type: "input", content: "A", sourceGroup: "conv:A" }, context);
+		await toolRunning(harness, root);
+		expect(await status(a)).toMatchObject({ sourceGroup: "conv:A" });
+		expect(await harness.snapshot(LiveDoc, root.id, context)).toMatchObject({ run: { sourceGroup: "conv:A" } });
+		const b = await root.submit({ type: "input", content: "B", whenBusy: "steer", sourceGroup: "conv:B" }, context);
+		const same = await root.submit(
+			{ type: "input", content: "A continuation", whenBusy: "steer", sourceGroup: "conv:A" },
+			context,
+		);
+		expect(
+			(await harness.snapshot(InboxDoc, root.id, context))?.items.map((item) => [
+				item.mode,
+				item.mode === "write" ? undefined : item.sourceGroup,
+			]),
+		).toEqual([
+			["steer", "conv:B"],
+			["steer", "conv:A"],
+		]);
+		gate.resolve();
+		await b.wait(context);
+		const entries = await allEntries(root);
+		const answers = entries.filter((entry) => entry.kind === "pi.assistant");
+		expect(transcript(entries)).toEqual([
+			"pi.user:A",
+			"pi.assistant",
+			"pi.tool-result",
+			"pi.user:A continuation",
+			"pi.assistant:A follow-up",
+			"pi.user:B",
+			"pi.assistant:B reply",
+		]);
+		expect(await status(a)).toMatchObject({ status: "done", answer: answers[1]!.id });
+		expect(await status(same)).toMatchObject({ status: "done", answer: answers[1]!.id });
+		expect(await status(b)).toMatchObject({ status: "done", answer: answers[2]!.id });
+		expect(setup.faux.state.callCount).toBe(3);
+		await harness.close(context);
+	});
+
+	it("keeps explicit interrupt cancellation across source groups", async () => {
+		const setup = chatSetup();
+		const first = gated(answer("must not settle"));
+		setup.faux.setResponses([first.step, answer("A resumed"), answer("B reply")]);
+		const { harness, root } = await openChat(new MemoryStorage(), setup);
+		const active = await root.submit({ type: "input", content: "A", sourceGroup: "conv:A" }, context);
+		await first.reached;
+		const interrupt = await root.submit(
+			{ type: "input", content: "B", whenBusy: "interrupt", sourceGroup: "conv:B" },
+			context,
+		);
+		expect(await harness.snapshot(LiveDoc, root.id, context)).toMatchObject({ run: { resumeOnInterrupt: true } });
+		await interrupt.wait(context);
+		expect(await status(active)).toMatchObject({ status: "done" });
+		expect(await status(interrupt)).toMatchObject({ status: "done" });
+		expect(transcript(await allEntries(root))).toEqual([
+			"pi.user:A",
+			"pi.assistant:A resumed",
+			"pi.user:B",
+			"pi.assistant:B reply",
+		]);
+		await harness.close(context);
+	});
+
 	it("queues busy submissions and places writes before user items at the final boundary, one follow-up per run", async () => {
 		const setup = chatSetup();
 		const first = gated(answer("first"));
@@ -176,14 +278,22 @@ describe("inbox", () => {
 		const first = gated(answer("first"));
 		setup.faux.setResponses([first.step, answer("both")]);
 		const yielded = deferred();
-		addHooks(setup.registry, GenerationTask, { onYield: () => void yielded.resolve() });
+		const resume = deferred();
+		addHooks(setup.registry, GenerationTask, {
+			onYield: async () => {
+				yielded.resolve();
+				await resume.promise;
+			},
+		});
 		const storage = new ControlledStorage();
 		const { harness, root } = await openChat(storage, setup);
 		await root.submit({ type: "input", content: "a" }, context);
 		await first.reached;
 		const f1 = await root.submit({ type: "input", content: "f1" }, context);
 		const f2 = await root.submit({ type: "input", content: "f2" }, context);
-		// Occupy the line, let the answer queue its boundary commit behind it, then change the mode.
+		// Hold the Session line at the answer hook, after model-observation commits but before the final boundary.
+		first.release();
+		await yielded.promise;
 		const held = storage.holdCommits();
 		const Marker = defineDoc<{ n: number }>({
 			kind: "test.marker",
@@ -193,12 +303,10 @@ describe("inbox", () => {
 		});
 		const occupying = root.commit(async (tx) => void (await tx.doc(Marker)).n++, context);
 		await held.entered;
-		first.release();
-		await yielded.promise;
-		await flush();
 		setup.settings.followUpMode = "all";
 		held.release();
 		await occupying;
+		resume.resolve();
 		const settled = await f2.wait(context);
 		expect(await status(f1)).toEqual({ ...settled, id: f1.id, entry: expect.any(Number) });
 		expect(setup.faux.state.callCount).toBe(2);

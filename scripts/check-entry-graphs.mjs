@@ -70,7 +70,8 @@ const BUDGETS = {
 			],
 		},
 		// The file tools reach their environment helpers and the Harness definitions they need, not the Harness itself.
-		"./tools": { maxFiles: 17, forbid: ["packages/durable/src/images/"] },
+		// The nine hashline modules are the migrated Yonder anchor tools, not incidental barrel reachability.
+		"./tools": { maxFiles: 26, forbid: ["packages/durable/src/images/"] },
 	},
 };
 

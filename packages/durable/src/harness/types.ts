@@ -67,6 +67,8 @@ export type SubmissionDraft = {
 			readonly whenBusy?: "steer" | "followUp" | "reject" | "interrupt";
 			/** Trusted host origin used to keep inputs from different sources in separate runs. */
 			readonly sourceGroup?: string;
+			/** Host-verified identity used to join the currently active group atomically at admission. */
+			readonly activeSource?: { readonly input?: SubmissionId; readonly prefix?: string };
 			/** Place the input as this entry; default `pi.user` without data. The kind must not start with `pi.`. */
 			readonly entry?: InputEntry;
 	  }

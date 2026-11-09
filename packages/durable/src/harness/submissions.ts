@@ -65,16 +65,20 @@ export class Submissions {
 		this.#resume();
 		const id = await this.#session.commitWith(async (tx) => {
 			const live = await tx.doc(LiveDoc, conversationId);
+			const group = activeSourceGroup(draft, live.run);
+			const admitted = draft.type === "input" && group !== undefined ? { ...draft, sourceGroup: group } : draft;
 			const current = live.run === undefined ? undefined : await tx.task(live.run.taskId);
 			const existing =
 				draft.requestId === undefined ? undefined : await tx.submissionByRequest(conversationId, draft.requestId);
 			const interrupt =
 				existing === undefined &&
-				draft.type === "input" &&
+				admitted.type === "input" &&
 				current !== undefined &&
-				(draft.whenBusy === "interrupt" ||
-					(draft.whenBusy === "steer" && draft.sourceGroup === live.run?.sourceGroup && live.tools === undefined));
-			const id = await admitSubmission(tx, conversationId, draft, this.#now(), this.#queueModes());
+				(admitted.whenBusy === "interrupt" ||
+					(admitted.whenBusy === "steer" &&
+						admitted.sourceGroup === live.run?.sourceGroup &&
+						live.tools === undefined));
+			const id = await admitSubmission(tx, conversationId, admitted, this.#now(), this.#queueModes());
 			// Steer preserves running tools; explicit interrupt cancels their ordinary ownership scope too.
 			if (interrupt && live.run !== undefined && current.kind === "pi.generation" && !current.abortRequested) {
 				live.run.resumeOnInterrupt = true;
@@ -171,6 +175,20 @@ function checkInputEntry(entry: InputEntry): void {
 			`An input entry's kind must be a non-empty string not starting with "pi.", got ${String(kind)}`,
 		);
 	}
+}
+
+/** Resolve host-verified active-source hints on the transaction's current run, not on a stale snapshot. */
+export function activeSourceGroup(
+	draft: SubmissionDraft,
+	run: { readonly sourceGroup?: string; readonly inputs: readonly SubmissionId[] } | undefined,
+): string | undefined {
+	if (draft.type !== "input" || !run?.sourceGroup || !draft.activeSource) return;
+	const active = draft.activeSource;
+	if (
+		(active.input !== undefined && run.inputs.includes(active.input)) ||
+		(active.prefix !== undefined && run.sourceGroup.startsWith(active.prefix))
+	)
+		return run.sourceGroup;
 }
 
 /**
